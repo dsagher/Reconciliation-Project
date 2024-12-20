@@ -35,17 +35,18 @@ def main(qbo, invoice_data, extensiv):
 
     reference_matches = find_value_match(extensiv, gp_reference_columns)
 
-    invoice_data_receiver_info = create_invoice_data_receiver_info(
-        invoice_data_not_in_qbo, reference_matches
-    )
+    print(reference_matches)
+    # invoice_data_receiver_info = create_invoice_data_receiver_info(
+    #     invoice_data_not_in_qbo, reference_matches
+    # )
 
-    extensiv_receiver_info = create_extensiv_receiver_info(extensiv)
+    # extensiv_receiver_info = create_extensiv_receiver_info(extensiv)
 
-    receiver_info_matches = compare_receiver_info(
-        invoice_data_receiver_info, extensiv_receiver_info
-    )
+    # receiver_info_matches = compare_receiver_info(
+    #     invoice_data_receiver_info, extensiv_receiver_info
+    # )
 
-    print(receiver_info_matches)
+    # print(receiver_info_matches)
 
 
 main(qbo=qbo, invoice_data=invoice_data, extensiv=gp_acoustics)
