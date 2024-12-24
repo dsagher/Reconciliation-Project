@@ -1,9 +1,60 @@
 import pandas as pd
 import re as re
+'''
+# Take in Excel (MAC)
+itemized = pd.read_excel(
+    "/Users/danielsagher/Dropbox/Documents/projects/nautical_reconciliation/excel/Nautical 11-2024.xlsx",
+    header=2,
+    sheet_name=0,
+)
+invoice_data = pd.read_excel(
+    "/Users/danielsagher/Dropbox/Documents/projects/nautical_reconciliation/excel/Nautical 11-2024.xlsx",
+    sheet_name=1,
+)
+qbo = pd.read_excel(
+    "/Users/danielsagher/Dropbox/Documents/projects/nautical_reconciliation/excel/QBO_customers.xlsx"
+)
+amt = pd.read_excel(
+    "/Users/danielsagher/Dropbox/Documents/projects/nautical_reconciliation/excel/Exensiv.xlsx",
+    sheet_name="AMT",
+)
+gp_acoustics = pd.read_excel(
+    "/Users/danielsagher/Dropbox/Documents/projects/nautical_reconciliation/excel/Exensiv.xlsx",
+    sheet_name="GPAcoustics",
+)
+whill = pd.read_excel(
+    "/Users/danielsagher/Dropbox/Documents/projects/nautical_reconciliation/excel/Exensiv.xlsx",
+    sheet_name="Whill",
+)
+'''
 
-# * Invoice_Data <-> QBO
+itemized = pd.read_excel("C:/Users/danie/OneDrive/Projects/fedex_reconciliation/Invoice_data.xlsx", header=2, sheet_name=0)
+invoice_data = pd.read_excel("C:/Users/danie/OneDrive/Projects/fedex_reconciliation/Invoice_data.xlsx", sheet_name=1)
+qbo = pd.read_excel("C:/Users/danie/OneDrive/Projects/fedex_reconciliation/QBO_customers(1).xlsx")
+amt = pd.read_excel("C:/Users/danie/OneDrive/Projects/fedex_reconciliation/Exensiv.xlsx", sheet_name='AMT')
+gp_acoustics = pd.read_excel("C:/Users/danie/OneDrive/Projects/fedex_reconciliation/Exensiv.xlsx", sheet_name='GPAcoustics')
+whill = pd.read_excel("C:/Users/danie/OneDrive/Projects/fedex_reconciliation/Exensiv.xlsx", sheet_name='Whill')
 
-##* Compare invoice_data['Customer PO #'] to qbo['Display_Name']
+
+invoice_data["Source"] = "Invoice Data"
+qbo["Source"] = "QBO"
+amt["Source"] = "AMT"
+gp_acoustics["Source"] = "GP Acoustics"
+whill["Source"] = "Whill"
+
+df = pd.concat(objs=[invoice_data, qbo, amt, whill, gp_acoustics], join="outer")
+
+
+
+# * Begin PowerBI
+
+amt = df[df["Source"] == "AMT"].dropna(axis=1, how="all")
+gp_acoustics = df[df["Source"] == "GP Acoustics"].dropna(
+    axis=1, how="all"
+)
+qbo = df[df["Source"] == "QBO"].dropna(axis=1, how="all")
+invoice_data = df[df["Source"] == "Invoice Data"].dropna(axis=1, how="all")
+whill = df[df["Source"] == "Whill"].dropna(axis=1, how="all")
 
 
 def compare_qbo(qbo: pd.DataFrame, invoice_data: pd.DataFrame) -> pd.DataFrame:
@@ -16,7 +67,12 @@ def compare_qbo(qbo: pd.DataFrame, invoice_data: pd.DataFrame) -> pd.DataFrame:
     # ? is 'Display_Name' the only key to compare against?
 
     qbo_found = pd.merge(
-        qbo, invoice_data, right_on="Customer PO #", left_on="Display_Name", how="inner"
+        qbo,
+        invoice_data,
+        right_on="Customer PO #",
+        left_on="Display_Name",
+        how="inner",
+        suffixes=["_qbo", "_invoice_data"],
     )
 
     lst = set()
@@ -24,25 +80,14 @@ def compare_qbo(qbo: pd.DataFrame, invoice_data: pd.DataFrame) -> pd.DataFrame:
         if i not in list(qbo_found["Display_Name"].unique()):
             lst.add(i)
 
-    not_found = pd.DataFrame()
-    not_found["Customer PO #"] = pd.DataFrame(lst)
-    not_found = not_found.merge(
-        invoice_data[
-            [
-                "Customer PO #",
-                "Reference",
-                "Reference 2",
-                "Total Charges",
-                "Receiver Name",
-                "Receiver Company",
-                "Receiver Address",
-                "Tracking #",
-            ]
-        ],
+    qbo_not_found = pd.DataFrame()
+    qbo_not_found["Customer PO #"] = pd.DataFrame(lst)
+    qbo_not_found = qbo_not_found.merge(
+        invoice_data,
         on="Customer PO #",
         how="left",
     )
-    return not_found
+    return qbo_found, qbo_not_found
 
 
 def add_pattern_column(invoice_data: pd.DataFrame) -> pd.DataFrame:
@@ -94,6 +139,10 @@ def find_extensiv_reference_columns(extensiv_table: pd.DataFrame, invoice_data_w
 
             for value in extensiv_table[col]:
 
+                if isinstance(value, float) and value.is_integer():
+
+                    value = int(value)
+
                 if re.fullmatch(ref_pattern, str(value)):
 
                     col_lst.add(col)
@@ -104,8 +153,6 @@ def find_extensiv_reference_columns(extensiv_table: pd.DataFrame, invoice_data_w
 
         if len(col_lst) != 0:
             return col_lst
-        else:
-            return None
 
     match_dct = dict()
     suffix = 0
@@ -152,7 +199,9 @@ def find_value_match(extensiv_table: pd.DataFrame, reference_matches: dict) -> l
             for i, val in enumerate(extensiv_table[col]):
 
                 base_reference = re.sub(r"-s\d+$", "", str(reference))
+                if isinstance(val, float) and val.is_integer():
 
+                    val = int(val)
                 if val == reference or val == base_reference:
 
                     match_entry = {
@@ -165,41 +214,8 @@ def find_value_match(extensiv_table: pd.DataFrame, reference_matches: dict) -> l
 
                     if match_entry not in match_lst:
                         match_lst.append(match_entry)
-                else:
-                    continue
 
-    if not match_lst:
-        print(f"No Matches")
-
-    else:
-        return match_lst
-
-
-def create_invoice_data_receiver_info(invoice_data: pd.DataFrame, reference_matches: list) -> dict:  # fmt: skip
-
-    found_reference_lst = list()
-
-    for i in reference_matches:
-        found_reference_lst.append(i["Reference"])
-
-    #! Taking out this conditional to test
-    invoice_data_null = invoice_data[
-        (invoice_data["Customer PO #"].isna())
-        & ~(invoice_data["Reference"].isin(found_reference_lst))
-    ]
-
-    invoice_data_dct = {}
-
-    for i, row in invoice_data.iterrows():
-
-        invoice_data_dct[i] = {
-            "Receiver Address": row["Receiver Address"],
-            "Receiver Company": row["Receiver Company"],
-            "Receiver Name": row["Receiver Name"],
-            "Tracking #": row["Tracking #"],
-        }
-
-    return invoice_data_dct
+    return match_lst
 
 
 def create_extensiv_receiver_info(extensiv_table: pd.DataFrame) -> dict:
@@ -236,6 +252,21 @@ def create_extensiv_receiver_info(extensiv_table: pd.DataFrame) -> dict:
     return extensiv_receiver_dct
 
 
+def create_invoice_data_receiver_info(invoice_data: pd.DataFrame) -> dict:  # fmt: skip
+
+    invoice_data_dct = {}
+
+    for i, row in invoice_data.iterrows():
+
+        invoice_data_dct[i] = {
+            "Receiver Address": row["Receiver Address"],
+            "Receiver Company": row["Receiver Company"],
+            "Receiver Name": row["Receiver Name"],
+            "Tracking #": row["Tracking #"],
+        }
+
+    return invoice_data_dct
+
 def compare_receiver_info(invoice_data_receiver_info: dict, extensiv_receiver_info: dict) -> list:  # fmt: skip
 
     match_entry = dict()
@@ -264,23 +295,81 @@ def compare_receiver_info(invoice_data_receiver_info: dict, extensiv_receiver_in
                 if match_entry not in match_lst:
                     match_lst.append(match_entry)
 
-    if match_lst:
-        return match_lst
-    else:
-        print("No Match")
+    return match_lst
 
 
-if __name__ == "__main__":
-    pass
+def make_final_df(reference_matches, receiver_matches, invoice_data_not_qbo):
 
-    # not_found = compare_qbo(qbo, invoice_data)
-    # not_found_patterns = add_pattern_column(not_found)
-    # gp_reference_matches = find_extensiv_reference_columns(
-    #     gp_acoustics, not_found_patterns
-    # )
-    # gp_found_values = find_value_match(gp_acoustics, gp_reference_matches)
-    # invoice_data_receiver_info = create_invoice_data_receiver_info(
-    #     not_found_patterns, gp_found_values
-    # )
-    # gp_receiver_info = create_extensiv_receiver_info(gp_acoustics)
-    # print(compare_receiver_info(invoice_data_receiver_info, gp_receiver_info))
+    try:
+
+        final_matches_lst = []
+        final_matches_lst.extend(reference_matches)
+        final_matches_lst.extend(receiver_matches)
+
+        for i, row in invoice_data_not_qbo.iterrows():
+
+            for dct in final_matches_lst:
+
+                if "Reference" in dct and dct["Reference"] == row["Reference"]:
+                    invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Name"]
+                elif "Address" in dct and dct["Address"] == row["Receiver Address"]:
+                    invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Customer"]
+                elif "Name" in dct and dct["Name"] == row["Receiver Name"]:
+                    invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Customer"]
+                elif "Company" in dct and dct["Company"] == row["Receiver Company"]:
+                    invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Customer"]
+                elif "Reference" in dct:
+                    try:
+                        dct["Reference"] = int(dct["Reference"])
+                    except ValueError:
+                        pass
+    except TypeError:
+        pass
+
+    return invoice_data_not_qbo
+
+
+qbo_found, invoice_data_not_qbo = compare_qbo(qbo, invoice_data)
+
+
+invoice_data_not_qbo = add_pattern_column(invoice_data_not_qbo)
+
+gp_reference_columns = find_extensiv_reference_columns(
+    gp_acoustics, invoice_data_not_qbo
+)
+amt_reference_columns = find_extensiv_reference_columns(amt, invoice_data_not_qbo)
+whill_reference_columns = find_extensiv_reference_columns(whill, invoice_data_not_qbo)
+
+gp_reference_matches = find_value_match(gp_acoustics, gp_reference_columns)
+amt_reference_matches = find_value_match(amt, amt_reference_columns)
+whill_reference_matches = find_value_match(whill, whill_reference_columns)
+
+print(gp_reference_matches)
+
+print(whill_reference_matches)
+gp_receiver_info = create_extensiv_receiver_info(gp_acoustics)
+amt_receiver_info = create_extensiv_receiver_info(amt)
+whill_receiver_info = create_extensiv_receiver_info(whill)
+invoice_data_receiver_info = create_invoice_data_receiver_info(invoice_data)
+gp_receiver_matches = compare_receiver_info(
+    invoice_data_receiver_info, gp_receiver_info
+)
+amt_receiver_matches = compare_receiver_info(
+    invoice_data_receiver_info, amt_receiver_info
+)
+whill_receiver_matches = compare_receiver_info(
+    invoice_data_receiver_info, whill_receiver_info
+)
+final_df = make_final_df(
+    gp_reference_matches, gp_receiver_matches, invoice_data_not_qbo
+)
+final_df = make_final_df(
+    amt_reference_matches, amt_receiver_matches, invoice_data_not_qbo
+)
+final_df = make_final_df(
+    whill_reference_matches, whill_receiver_matches, invoice_data_not_qbo
+)
+
+del final_df["Pattern"]
+
+print(len(final_df))
