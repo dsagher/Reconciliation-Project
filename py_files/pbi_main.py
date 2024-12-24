@@ -1,6 +1,6 @@
 import pandas as pd
 import re as re
-
+'''
 # Take in Excel (MAC)
 itemized = pd.read_excel(
     "/Users/danielsagher/Dropbox/Documents/projects/nautical_reconciliation/excel/Nautical 11-2024.xlsx",
@@ -26,6 +26,14 @@ whill = pd.read_excel(
     "/Users/danielsagher/Dropbox/Documents/projects/nautical_reconciliation/excel/Exensiv.xlsx",
     sheet_name="Whill",
 )
+'''
+
+itemized = pd.read_excel("C:/Users/danie/OneDrive/Projects/fedex_reconciliation/Invoice_data.xlsx", header=2, sheet_name=0)
+invoice_data = pd.read_excel("C:/Users/danie/OneDrive/Projects/fedex_reconciliation/Invoice_data.xlsx", sheet_name=1)
+qbo = pd.read_excel("C:/Users/danie/OneDrive/Projects/fedex_reconciliation/QBO_customers(1).xlsx")
+amt = pd.read_excel("C:/Users/danie/OneDrive/Projects/fedex_reconciliation/Exensiv.xlsx", sheet_name='AMT')
+gp_acoustics = pd.read_excel("C:/Users/danie/OneDrive/Projects/fedex_reconciliation/Exensiv.xlsx", sheet_name='GPAcoustics')
+whill = pd.read_excel("C:/Users/danie/OneDrive/Projects/fedex_reconciliation/Exensiv.xlsx", sheet_name='Whill')
 
 
 invoice_data["Source"] = "Invoice Data"
@@ -36,10 +44,12 @@ whill["Source"] = "Whill"
 
 df = pd.concat(objs=[invoice_data, qbo, amt, whill, gp_acoustics], join="outer")
 
+
+
 # * Begin PowerBI
 
-amt = df[df["CustomerIdentifier.Name"] == "AMT"].dropna(axis=1, how="all")
-gp_acoustics = df[df["CustomerIdentifier.Name"] == "GP Acoustics"].dropna(
+amt = df[df["Source"] == "AMT"].dropna(axis=1, how="all")
+gp_acoustics = df[df["Source"] == "GP Acoustics"].dropna(
     axis=1, how="all"
 )
 qbo = df[df["Source"] == "QBO"].dropna(axis=1, how="all")
@@ -189,7 +199,9 @@ def find_value_match(extensiv_table: pd.DataFrame, reference_matches: dict) -> l
             for i, val in enumerate(extensiv_table[col]):
 
                 base_reference = re.sub(r"-s\d+$", "", str(reference))
+                if isinstance(val, float) and val.is_integer():
 
+                    val = int(val)
                 if val == reference or val == base_reference:
 
                     match_entry = {
@@ -318,15 +330,23 @@ def make_final_df(reference_matches, receiver_matches, invoice_data_not_qbo):
 
 
 qbo_found, invoice_data_not_qbo = compare_qbo(qbo, invoice_data)
-invoice_data_not_qbo = add_pattern_column(invoice_data)
+
+
+invoice_data_not_qbo = add_pattern_column(invoice_data_not_qbo)
+
 gp_reference_columns = find_extensiv_reference_columns(
     gp_acoustics, invoice_data_not_qbo
 )
 amt_reference_columns = find_extensiv_reference_columns(amt, invoice_data_not_qbo)
 whill_reference_columns = find_extensiv_reference_columns(whill, invoice_data_not_qbo)
+
 gp_reference_matches = find_value_match(gp_acoustics, gp_reference_columns)
 amt_reference_matches = find_value_match(amt, amt_reference_columns)
 whill_reference_matches = find_value_match(whill, whill_reference_columns)
+
+print(gp_reference_matches)
+
+print(whill_reference_matches)
 gp_receiver_info = create_extensiv_receiver_info(gp_acoustics)
 amt_receiver_info = create_extensiv_receiver_info(amt)
 whill_receiver_info = create_extensiv_receiver_info(whill)
@@ -352,4 +372,4 @@ final_df = make_final_df(
 
 del final_df["Pattern"]
 
-print(final_df)
+print(len(final_df))
