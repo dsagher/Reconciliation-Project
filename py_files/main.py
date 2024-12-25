@@ -5,8 +5,8 @@ import os
 import datetime
 import pandas as pd
 
+
 os.chdir(os.path.join(os.getcwd(), "input_files"))
-print(os.getcwd())
 
 for i in os.listdir():
 
@@ -23,18 +23,12 @@ os.chdir(os.path.join(os.getcwd(), "customers"))
 
 customer_lst = []
 
-for i in os.listdir():
-
-    if i.endswith(".xlsx"):
-        ext = len(".xlsx")
-    elif i.endswith(".csv"):
-        ext = len(".csv")
-    customer_lst.append(i)
+print(os.listdir())
 
 # print(customer_lst)
 customer_dct = {}
 
-for i in customer_lst:
+for i in os.listdir():
     if i.endswith(".xlsx"):
         customer_dct[i] = pd.read_excel(f"{os.path.join(os.getcwd(),i)}")
 
@@ -43,6 +37,8 @@ customer_dct = {
     key.removesuffix(".xlsx").lower().replace(" ", "_"): value
     for key, value in customer_dct.items()
 }
+
+print(customer_dct)
 
 
 def main(invoice_data, qbo, customer_dct):
