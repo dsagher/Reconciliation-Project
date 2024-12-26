@@ -57,7 +57,7 @@ def reg_tokenizer(value):
     return final
 
 
-def find_extensiv_reference_columns(extensiv_table: pd.DataFrame, invoice_data_w_patterns: pd.DataFrame) -> dict:  # fmt: skip
+def find_extensiv_reference_columns(extensiv_table: pd.DataFrame, qbo_not_found: pd.DataFrame, customer: str ) -> dict:  # fmt: skip
     """
     Function: Finds all of the columns in the Extensiv table that match each 'Reference' in FedEx Invoice not in QBO
     Input: Extensiv DataFrame, FedEx Invoice DataFrame w/ added 'Pattern' column
@@ -89,27 +89,27 @@ def find_extensiv_reference_columns(extensiv_table: pd.DataFrame, invoice_data_w
     match_dct = dict()
     suffix = 0
 
-    for i, v in enumerate(invoice_data_w_patterns["Reference"]):
+    # Suffix Maker
+    for i, v in enumerate(qbo_not_found["Reference"]):
 
-        if i != 0 and v == invoice_data_w_patterns["Reference"][i - 1]:
+        if i != 0 and v == qbo_not_found["Reference"][i - 1]:
 
             suffix += 1
             v = f"{v}-s{suffix}"
 
-        elif i != 0 and v != invoice_data_w_patterns["Reference"][i - 1]:
+        elif i != 0 and v != qbo_not_found["Reference"][i - 1]:
             suffix = 0
         else:
             continue
 
-        match_lst = find_col_match(
-            extensiv_table, invoice_data_w_patterns["Pattern"][i]
-        )
+        match_lst = find_col_match(extensiv_table, qbo_not_found["Pattern"][i])
 
         if match_lst is not None and not pd.isna(v):
 
             match_dct[v] = {
                 "match_lst": match_lst,
-                "Tracking #": (invoice_data_w_patterns["Tracking #"][i]),
+                "Tracking #": (qbo_not_found["Tracking #"][i]),
+                "Customer": customer,
             }
 
     return match_dct
@@ -119,17 +119,27 @@ def find_extensiv_reference_columns(extensiv_table: pd.DataFrame, invoice_data_w
 
 
 def find_value_match(
-    extensiv_table: pd.DataFrame, reference_matches: dict
+    extensiv_table: pd.DataFrame, reference_columns: dict
 ) -> pd.DataFrame:
 
     match_lst = list()
 
-    for reference in reference_matches:
+    for reference in reference_columns:
 
-        matches = reference_matches[reference]["match_lst"]
-        tracking_number = reference_matches[reference]["Tracking #"]
-
-        for col in extensiv_table[list[matches]]:
+        columns = reference_columns[reference]["match_lst"]
+        tracking_number = reference_columns[reference]["Tracking #"]
+        customer = reference_columns[reference]["Customer"]
+        print(
+            "reference:",
+            reference,
+            "columns:",
+            columns,
+            "tracking_num:",
+            tracking_number,
+            "customer:",
+            customer,
+        )
+        for col in extensiv_table[list[columns]]:
 
             for i, val in enumerate(extensiv_table[col]):
 
@@ -141,10 +151,12 @@ def find_value_match(
                         "Reference": base_reference,
                         "Name": extensiv_table["CustomerIdentifier.Name"][i],
                         "Column": col,
+                        "Customer": customer,
                         "Tracking #": tracking_number,
                     }
 
                     if match_entry not in match_lst:
+                        print("a match was made!", match_entry)
                         match_lst.append(match_entry)
 
     return match_lst
@@ -152,16 +164,7 @@ def find_value_match(
 
 def create_extensiv_receiver_info(extensiv_table: pd.DataFrame) -> dict:
 
-    extensiv_receiver_info = extensiv_table[
-        [
-            "ShipTo.CompanyName",
-            "ShipTo.Name",
-            "ShipTo.Address1",
-            "CustomerIdentifier.Name",
-        ]
-    ]
-
-    extensiv_receiver_info_nd = extensiv_receiver_info.drop_duplicates(
+    extensiv_receiver_info_nd = extensiv_table.drop_duplicates(
         [
             "ShipTo.CompanyName",
             "ShipTo.Name",
@@ -226,8 +229,8 @@ def compare_receiver_info(invoice_data_receiver_info: dict, extensiv_receiver_in
 
                 if match_entry not in match_lst:
                     match_lst.append(match_entry)
-    if match_lst:
-        return match_lst
+
+    return match_lst
 
 
 def make_final_df(reference_matches, receiver_matches, invoice_data_not_qbo):
