@@ -27,19 +27,21 @@ def io(input_path):
             cur_path = os.path.join(orig_path, i)
             qbo = pd.read_excel(cur_path)
 
-    # Tunnel into path/input_files/customers
-    customer_path = os.path.join(orig_path, "customers")
-    print(customer_path)
-    # Create customer_dct from all files in customer folder
-    customer_dct = {}
-    for i in os.listdir(customer_path):
-        if i.endswith(".xlsx"):
-            customer_dct[i] = pd.read_excel(f"{os.path.join(customer_path,i)}")
+    # # Tunnel into path/input_files/customers
+    # os.chdir(os.path.join(os.getcwd(), "customers"))
 
-    customer_dct = {
-        key.removesuffix(".xlsx"): value for key, value in customer_dct.items()
-    }
-    return invoice_data, qbo, customer_dct
+    # # Create customer_dct from all files in customer folder
+    # customer_dct = {}
+    # for i in os.listdir():
+    #     if i.endswith(".xlsx"):
+    #         customer_dct[i] = pd.read_excel(f"{os.path.join(os.getcwd(),i)}")
+
+    # customer_dct = {
+    #     key.removesuffix(".xlsx"): value for key, value in customer_dct.items()
+    # }
+
+
+io(input("File Path: "))
 
 
 def main(invoice_data, qbo, customer_dct):
@@ -66,7 +68,7 @@ def main(invoice_data, qbo, customer_dct):
         reference_matches.extend(find_value_match(dataframe, reference_columns))
 
         extensiv_receiver_info = create_extensiv_receiver_info(dataframe)
-
+        print(extensiv_receiver_info)
         receiver_matches.extend(
             compare_receiver_info(invoice_data_receiver_info, extensiv_receiver_info)
         )
@@ -79,5 +81,6 @@ def main(invoice_data, qbo, customer_dct):
 
 
 if __name__ == "__main__":
-    invoice_data, qbo, customer_dct = io(input("File Path: "))
-    print(main(invoice_data, qbo, customer_dct))
+
+    # main(invoice_data, qbo, customer_dct)
+    pass
