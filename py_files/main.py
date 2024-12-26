@@ -6,7 +6,9 @@ import pandas as pd
 from tqdm import tqdm
 
 
-def inp(input_path):
+def inp(input_path: str) -> pd.DataFrame:
+
+    #! Add Error handling and logging
 
     orig_path = os.path.join(input_path, "input_files")
 
@@ -43,31 +45,32 @@ def inp(input_path):
     return invoice_data, qbo, customer_dct
 
 
-def out(final_df, qbo_found):
+def out(final_df: pd.DataFrame, qbo_found: pd.DataFrame) -> None:
 
     print("Writing Excel")
 
     cur_path = os.getcwd()
+    output_dir = os.path.join(cur_path, "output_files")
+    os.makedirs(output_dir, exist_ok=True)
+
     target_path = os.path.join(cur_path, "output_files", f"final_df_{date.today()}")
 
     with pd.ExcelWriter(f"{target_path}.xlsx") as writer:
 
-        if "output_files" in os.listdir(cur_path):
-            final_df.to_excel(writer, sheet_name="final_df")
-            qbo_found.to_excel(writer, sheet_name="qbo_found")
-        else:
-            os.mkdir("output_files")
-            final_df.to_excel(writer, sheet_name="final_df")
-            qbo_found.to_excel(writer, sheet_name="qbo_found")
+        final_df.to_excel(writer, sheet_name="final_df")
+        qbo_found.to_excel(writer, sheet_name="qbo_found")
 
 
-def main(invoice_data, qbo, customer_dct):
+def main(
+    invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict
+) -> pd.DataFrame:
 
     print("Pre-Processing")
     # Pre-process
     convert_floats2ints(invoice_data)
     convert_floats2ints(qbo)
-    [lambda x: convert_floats2ints(x) for x in customer_dct]
+    for df in customer_dct.values():
+        convert_floats2ints(df)
 
     print("Comparing FedEx Invoice to QBO")
     # Compare FedEx invoice to QBO
@@ -100,7 +103,7 @@ def main(invoice_data, qbo, customer_dct):
 
         final_df = make_final_df(reference_matches, receiver_matches, qbo_not_found)
 
-    del final_df["Pattern"]
+    final_df = final_df.drop(columns=["Pattern"])
 
     print("Matching Completed")
 
@@ -109,7 +112,12 @@ def main(invoice_data, qbo, customer_dct):
 
 if __name__ == "__main__":
 
-    invoice_data, qbo, customer_dct = inp(input("File Path: "))
+    invoice_data, qbo, customer_dct = inp(
+        input(
+            input_path=input("File Path (or press Enter for current directory): ")
+            or os.getcwd()
+        )
+    )
     final_df, qbo_found = main(invoice_data, qbo, customer_dct)
     out(final_df, qbo_found)
     print("All done")
