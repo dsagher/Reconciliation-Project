@@ -27,11 +27,15 @@ def compare_qbo(qbo: pd.DataFrame, invoice_data: pd.DataFrame) -> pd.DataFrame:
         suffixes=["_qbo", "_invoice_data"],
     )
 
+    #! Trying to make output of qbo_found have only invoice data colums
+
     lst = set()
     for i in invoice_data["Customer PO #"]:
         if i not in list(qbo_found["Display_Name"].unique()):
             lst.add(i)
 
+    invoice_cols = list(invoice_data.columns)
+    qbo_found = qbo_found[invoice_cols]
     qbo_not_found = pd.DataFrame()
     qbo_not_found["Customer PO #"] = pd.DataFrame(lst)
     qbo_not_found = qbo_not_found.merge(

@@ -1,38 +1,78 @@
-from pattern_match import *
-from processing import convert_floats2ints
 import os
-from datetime import date
+from datetime import datetime
+
+# Third-party imports
 import pandas as pd
 from tqdm import tqdm
 
+# Local application imports
+from pattern_match import *
+from processing import convert_floats2ints
 
-def inp(input_path: str) -> pd.DataFrame:
 
-    #! Add Error handling and logging
+def inp(path: str) -> pd.DataFrame:
 
-    orig_path = os.path.join(input_path, "input_files")
+    def str_normalize(str: str) -> str:
+        return str.lower().strip().replace(" ", "_")
+
+    original_path = path
+
+    if not os.path.exists(original_path):
+        raise FileNotFoundError("Path does not exist")
+
+    for file in os.listdir(path):
+        if re.search(r"input(?:_files)?", str_normalize(file)):
+            break
+    else:
+        raise FileNotFoundError("Input Files folder not found")
+
+    in_path = os.path.join(path, "input_files")
+
+    for file in os.listdir(in_path):
+        if re.search(r"invoice(?:_data)?", str_normalize(file)):
+            break
+    else:
+        raise FileNotFoundError("Invoice Data not found")
+
+    for file in os.listdir(in_path):
+        if re.search(r"qbo", str_normalize(file)):
+            break
+    else:
+        raise FileNotFoundError("QBO not found")
 
     print("Taking in files")
     # Get list of files in input_files
-    for i in tqdm(os.listdir(orig_path)):
+    for i in tqdm(os.listdir(in_path)):
 
         # Load invoice_data
-        if i.lower().strip().replace(" ", "_").startswith("invoice_data"):
+        if str_normalize(i).startswith("invoice_data"):
 
-            cur_path = os.path.join(orig_path, i)
+            cur_path = os.path.join(in_path, i)
             invoice_data = pd.read_excel(
                 cur_path,
                 sheet_name=f"{i.rstrip('.xlsx')}",
             )
         # Load qbo
-        elif i.lower().strip().replace(" ", "_").startswith("qbo"):
+        elif str_normalize(i).startswith("qbo"):
 
-            cur_path = os.path.join(orig_path, i)
+            cur_path = os.path.join(in_path, i)
             qbo = pd.read_excel(cur_path)
 
     # Tunnel into path/input_files/customers
-    customer_path = os.path.join(orig_path, "customers")
+    customer_path = os.path.join(in_path, "customers")
 
+    for file in os.listdir(in_path):
+
+        if re.search(r"customer", str_normalize(file)) and os.path.isdir(
+            f"{in_path}/{file}"):  # fmt: skip
+            break
+    else:
+        raise FileNotFoundError("Please create a customer folder")
+
+    if len(os.listdir(customer_path)) == 0:
+        raise FileNotFoundError("Customer Folder is Empty")
+
+    #! Create functionality for CSV
     # Create customer_dct from all files in customer folder
     customer_dct = {}
     for i in os.listdir(customer_path):
@@ -53,7 +93,11 @@ def out(final_df: pd.DataFrame, qbo_found: pd.DataFrame) -> None:
     output_dir = os.path.join(cur_path, "output_files")
     os.makedirs(output_dir, exist_ok=True)
 
-    target_path = os.path.join(cur_path, "output_files", f"final_df_{date.today()}")
+    target_path = os.path.join(
+        cur_path,
+        "output_files",
+        f"final_df_{datetime.now().strftime("%Y-%m-%d_%H:%M:%S")}",
+    )
 
     with pd.ExcelWriter(f"{target_path}.xlsx") as writer:
 
@@ -85,7 +129,7 @@ def main(
     reference_matches = list()
     receiver_matches = list()
 
-    print("Searching through Extensiv tables for reference and receiver info matchces")
+    print("Searching through Extensiv tables for reference and receiver info matches")
     # Loop through Extensiv tables and find matches
     for customer, dataframe in tqdm(customer_dct.items(), smoothing=0.1):
 
@@ -113,10 +157,7 @@ def main(
 if __name__ == "__main__":
 
     invoice_data, qbo, customer_dct = inp(
-        input(
-            input_path=input("File Path (or press Enter for current directory): ")
-            or os.getcwd()
-        )
+        path=input("File Path (or press Enter for current directory): ") or os.getcwd()
     )
     final_df, qbo_found = main(invoice_data, qbo, customer_dct)
     out(final_df, qbo_found)
