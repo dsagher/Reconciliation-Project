@@ -128,6 +128,7 @@ def find_value_match(
         columns = reference_columns[reference]["match_lst"]
         tracking_number = reference_columns[reference]["Tracking #"]
         customer = reference_columns[reference]["Customer"]
+
         for col in extensiv_table[list[columns]]:
 
             for i, val in enumerate(extensiv_table[col]):

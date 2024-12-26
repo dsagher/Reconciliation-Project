@@ -1,18 +1,19 @@
 from pattern_match import *
-
-# from processing import invoice_data, qbo, whill, gp_acoustics, amt
+from processing import convert_floats2ints
 import os
-import datetime
+from datetime import date
 import pandas as pd
+from tqdm import tqdm
 
 
-def io(input_path):
+def inp(input_path):
 
     orig_path = os.path.join(input_path, "input_files")
 
+    print("Taking in files")
     # Get list of files in input_files
-    for i in os.listdir(orig_path):
-        print(i)
+    for i in tqdm(os.listdir(orig_path)):
+
         # Load invoice_data
         if i.lower().strip().replace(" ", "_").startswith("invoice_data"):
 
@@ -29,7 +30,7 @@ def io(input_path):
 
     # Tunnel into path/input_files/customers
     customer_path = os.path.join(orig_path, "customers")
-    print(customer_path)
+
     # Create customer_dct from all files in customer folder
     customer_dct = {}
     for i in os.listdir(customer_path):
@@ -42,8 +43,33 @@ def io(input_path):
     return invoice_data, qbo, customer_dct
 
 
+def out(final_df, qbo_found):
+
+    print("Writing Excel")
+
+    cur_path = os.getcwd()
+    target_path = os.path.join(cur_path, "output_files", f"final_df_{date.today()}")
+
+    with pd.ExcelWriter(f"{target_path}.xlsx") as writer:
+
+        if "output_files" in os.listdir(cur_path):
+            final_df.to_excel(writer, sheet_name="final_df")
+            qbo_found.to_excel(writer, sheet_name="qbo_found")
+        else:
+            os.mkdir("output_files")
+            final_df.to_excel(writer, sheet_name="final_df")
+            qbo_found.to_excel(writer, sheet_name="qbo_found")
+
+
 def main(invoice_data, qbo, customer_dct):
 
+    print("Pre-Processing")
+    # Pre-process
+    convert_floats2ints(invoice_data)
+    convert_floats2ints(qbo)
+    [lambda x: convert_floats2ints(x) for x in customer_dct]
+
+    print("Comparing FedEx Invoice to QBO")
     # Compare FedEx invoice to QBO
     qbo_found, qbo_not_found = compare_qbo(qbo, invoice_data)
 
@@ -56,8 +82,9 @@ def main(invoice_data, qbo, customer_dct):
     reference_matches = list()
     receiver_matches = list()
 
-    # Loop through Extensiv tables
-    for customer, dataframe in customer_dct.items():
+    print("Searching through Extensiv tables for reference and receiver info matchces")
+    # Loop through Extensiv tables and find matches
+    for customer, dataframe in tqdm(customer_dct.items(), smoothing=0.1):
 
         reference_columns = find_extensiv_reference_columns(
             dataframe, qbo_not_found, customer
@@ -75,9 +102,14 @@ def main(invoice_data, qbo, customer_dct):
 
     del final_df["Pattern"]
 
-    return final_df
+    print("Matching Completed")
+
+    return final_df, qbo_found
 
 
 if __name__ == "__main__":
-    invoice_data, qbo, customer_dct = io(input("File Path: "))
-    print(main(invoice_data, qbo, customer_dct))
+
+    invoice_data, qbo, customer_dct = inp(input("File Path: "))
+    final_df, qbo_found = main(invoice_data, qbo, customer_dct)
+    out(final_df, qbo_found)
+    print("All done")
