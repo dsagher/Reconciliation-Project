@@ -57,7 +57,7 @@ def reg_tokenizer(value):
     return final
 
 
-def find_extensiv_reference_columns(extensiv_table: pd.DataFrame, qbo_not_found: pd.DataFrame, customer: str ) -> dict:  # fmt: skip
+def find_extensiv_reference_columns(extensiv_table: pd.DataFrame, qbo_not_found: pd.DataFrame, customer: str) -> dict:  # fmt: skip
     """
     Function: Finds all of the columns in the Extensiv table that match each 'Reference' in FedEx Invoice not in QBO
     Input: Extensiv DataFrame, FedEx Invoice DataFrame w/ added 'Pattern' column
@@ -89,7 +89,6 @@ def find_extensiv_reference_columns(extensiv_table: pd.DataFrame, qbo_not_found:
     match_dct = dict()
     suffix = 0
 
-    # Suffix Maker
     for i, v in enumerate(qbo_not_found["Reference"]):
 
         if i != 0 and v == qbo_not_found["Reference"][i - 1]:
@@ -129,16 +128,6 @@ def find_value_match(
         columns = reference_columns[reference]["match_lst"]
         tracking_number = reference_columns[reference]["Tracking #"]
         customer = reference_columns[reference]["Customer"]
-        print(
-            "reference:",
-            reference,
-            "columns:",
-            columns,
-            "tracking_num:",
-            tracking_number,
-            "customer:",
-            customer,
-        )
         for col in extensiv_table[list[columns]]:
 
             for i, val in enumerate(extensiv_table[col]):
@@ -156,7 +145,6 @@ def find_value_match(
                     }
 
                     if match_entry not in match_lst:
-                        print("a match was made!", match_entry)
                         match_lst.append(match_entry)
 
     return match_lst
@@ -164,7 +152,7 @@ def find_value_match(
 
 def create_extensiv_receiver_info(extensiv_table: pd.DataFrame) -> dict:
 
-    extensiv_receiver_info_nd = extensiv_table.drop_duplicates(
+    extensiv_receiver_info = extensiv_table.drop_duplicates(
         [
             "ShipTo.CompanyName",
             "ShipTo.Name",
@@ -175,7 +163,7 @@ def create_extensiv_receiver_info(extensiv_table: pd.DataFrame) -> dict:
 
     extensiv_receiver_dct = dict()
 
-    for i, row in extensiv_receiver_info_nd.iterrows():
+    for i, row in extensiv_receiver_info.iterrows():
 
         extensiv_receiver_dct[i] = {
             "Receiver Address": row["ShipTo.Address1"],
