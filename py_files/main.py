@@ -4,10 +4,11 @@ import pandas as pd
 from tqdm import tqdm
 from pattern_match import *
 from processing import convert_floats2ints
-from IPython.display import display, clear_output
 
 
 def inp(path: str) -> pd.DataFrame:
+
+    #! add helper functions for check_file_exists and check_regex_pattern
 
     def str_normalize(str: str) -> str:
         return str.lower().strip().replace(" ", "_")
@@ -43,8 +44,7 @@ def inp(path: str) -> pd.DataFrame:
             "QBO not found. Expected a file like 'qbo' in 'input_files/' folder"
         )
 
-    display("Taking in files")
-    clear_output(wait=True)
+    print("Taking in files")
 
     # Get list of files in input_files
     for i in tqdm(os.listdir(in_path)):
@@ -107,8 +107,7 @@ def inp(path: str) -> pd.DataFrame:
 
 def out(final_df: pd.DataFrame, qbo_found: pd.DataFrame) -> None:
 
-    display("Writing Excel")
-    clear_output(wait=True)
+    print("Writing Excel")
 
     cur_path = os.getcwd()
     output_dir = os.path.join(cur_path, "output_files")
@@ -128,16 +127,16 @@ def out(final_df: pd.DataFrame, qbo_found: pd.DataFrame) -> None:
 
 def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict ) -> pd.DataFrame:  # fmt: skip
 
-    display("Pre-Processing")
-    clear_output(wait=True)
+    print("Pre-Processing")
+
     # Pre-process
     convert_floats2ints(invoice_data)
     convert_floats2ints(qbo)
     for df in customer_dct.values():
         convert_floats2ints(df)
 
-    display("Comparing FedEx Invoice to QBO")
-    clear_output(wait=True)
+    print("Comparing FedEx Invoice to QBO")
+
     # Compare FedEx invoice to QBO
     qbo_found, qbo_not_found = compare_qbo(qbo, invoice_data)
 
@@ -150,8 +149,8 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict ) -> 
     reference_matches = list()
     receiver_matches = list()
 
-    display("Searching through Extensiv tables for reference and receiver info matches")
-    clear_output(wait=True)
+    print("Searching through Extensiv tables for reference and receiver info matches")
+
     # Loop through Extensiv tables and find matches
     for customer, dataframe in tqdm(customer_dct.items(), smoothing=0.1):
 
@@ -171,8 +170,7 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict ) -> 
 
     final_df = final_df.drop(columns=["Pattern"])
 
-    display("Matching Completed")
-    clear_output(wait=True)
+    print("Matching Completed")
 
     return final_df, qbo_found
 
@@ -184,5 +182,4 @@ if __name__ == "__main__":
     )
     final_df, qbo_found = main(invoice_data, qbo, customer_dct)
     out(final_df, qbo_found)
-    display("All done")
-    clear_output(wait=True)
+    print("All done")
