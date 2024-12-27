@@ -5,3 +5,5 @@ output_files/
 input_files/
 Whill.xlsx
 .DS_Store
+py_files/pattern_match.ipynb
+py_files/pre_process_nb.ipynb
