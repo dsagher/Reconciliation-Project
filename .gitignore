@@ -2,9 +2,6 @@ venv/
 __pycache__/
 .env
 output_files/
-invoice_data.xlsx
-qbo_customers.xlsx
-AMT.xlsx
-Gp_Acoustics.xlsx
+input_files/
 Whill.xlsx
 .DS_Store

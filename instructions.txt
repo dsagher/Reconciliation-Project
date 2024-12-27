@@ -1,2 +1,40 @@
-# Setup
+# Setup Instructions
 
+1. **Download the Project**
+   - Clone the repository or download the project folder from:
+     (https://github.com/dsagher/Reconciliation-Project)
+
+2. **Prepare the Directory Structure**
+   - Inside the root project folder:
+     - Create a folder named `input_files/`.
+     - Inside `input_files/`, create a subfolder named `customers/`.
+
+3. **Add Files**
+   - Place individual `customer.xlsx` files into the `customers/` folder.
+   - Place `invoice_data.xlsx` and `qbo.xlsx` into the `input_files/` folder.
+
+4. **Install Requirements**
+   Choose one of the following options to install the project dependencies:
+
+   - **Option A: Use a Virtual Environment (Recommended)**
+     1. While in the project folder, create and activate a virtual environment:
+        - Linux/macOS:
+          ```bash
+          python -m venv venv
+          source venv/bin/activate
+          ```
+        - Windows:
+          ```bash
+          python -m venv venv
+          venv\Scripts\activate
+          ```
+     2. Install the required packages:
+        ```bash
+        pip install -r requirements.txt
+        ```
+
+   - **Option B: Install Requirements Globally**
+     - Run the following command to install the dependencies globally:
+       ```bash
+       pip install -r path/to/folder/requirements.txt
+       ```
