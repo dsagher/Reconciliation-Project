@@ -18,7 +18,7 @@
    Choose one of the following options to install the project dependencies:
 
    - **Option A: Use a Virtual Environment (Recommended)**
-     1. While in the project folder, create and activate a virtual environment:
+     1. While cd'd into the project folder, create and activate a virtual environment:
         - Linux/macOS:
           ```bash
           python -m venv venv
