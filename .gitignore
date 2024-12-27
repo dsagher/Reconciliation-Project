@@ -2,3 +2,4 @@ venv/
 __pycache__/
 .env
 output_files/
+input_files/
