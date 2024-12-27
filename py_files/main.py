@@ -4,6 +4,7 @@ import pandas as pd
 from tqdm import tqdm
 from pattern_match import *
 from processing import convert_floats2ints
+from IPython.display import display, clear_output
 
 
 def inp(path: str) -> pd.DataFrame:
@@ -11,7 +12,7 @@ def inp(path: str) -> pd.DataFrame:
     def str_normalize(str: str) -> str:
         return str.lower().strip().replace(" ", "_")
 
-    original_path = path
+    original_path = os.path.normpath(path)
 
     if not os.path.exists(original_path):
         raise FileNotFoundError("Path does not exist")
@@ -20,23 +21,31 @@ def inp(path: str) -> pd.DataFrame:
         if re.search(r"input(?:_+files)?", str_normalize(file)):
             break
     else:
-        raise FileNotFoundError("Input Files folder not found")
+        raise FileNotFoundError(
+            "Input Files folder not found. Expected a folder like 'input_files/' in root folder."
+        )
 
-    in_path = os.path.join(path, "input_files")
+    in_path = os.path.normpath(os.path.join(path, "input_files"))
 
     for file in os.listdir(in_path):
         if re.search(r"invoice(?:_+data)?", str_normalize(file)):
             break
     else:
-        raise FileNotFoundError("Invoice Data not found")
+        raise FileNotFoundError(
+            "Invoice Data not found. Expected a file like 'invoice_data.xlsx' in 'input_files/' folder."
+        )
 
     for file in os.listdir(in_path):
         if re.search(r"(qbo|quickbooks)", str_normalize(file)):
             break
     else:
-        raise FileNotFoundError("QBO not found")
+        raise FileNotFoundError(
+            "QBO not found. Expected a file like 'qbo' in 'input_files/' folder"
+        )
 
-    print("Taking in files")
+    display("Taking in files")
+    clear_output(wait=True)
+
     # Get list of files in input_files
     for i in tqdm(os.listdir(in_path)):
 
@@ -44,33 +53,45 @@ def inp(path: str) -> pd.DataFrame:
         if str_normalize(i).startswith("invoice_data"):
 
             cur_path = os.path.join(in_path, i)
-            invoice_data = pd.read_excel(
-                cur_path,
-                sheet_name=f"{i.rstrip('.xlsx')}",
-            )
+
+            inv_sheets = pd.ExcelFile(cur_path)
+            inv_sheet_names = inv_sheets.sheet_names
+
+            correct_sheet = None
+
+            for sheet in inv_sheet_names:
+                if re.search(r"invoice[_\-\s]*(data)?", sheet, flags=re.IGNORECASE):
+                    correct_sheet = sheet
+                    break
+            if not correct_sheet:
+                raise ValueError(f"No valid sheet found in '{in_path} for {i}")
+
+            try:
+                invoice_data = pd.read_excel(cur_path, sheet_name=correct_sheet)
+
+            except Exception as e:
+                raise ValueError(f"Error reading Excel file '{cur_path}': {e}.")
+
         # Load qbo
-        elif str_normalize(i).startswith("qbo") or str_normalize(i).startswith(
-            "quickbooks"
-        ):
+        elif str_normalize(i).startswith("qbo") or str_normalize(i).startswith("quickbooks"):  # fmt: skip
 
             cur_path = os.path.join(in_path, i)
             qbo = pd.read_excel(cur_path)
 
     # Tunnel into path/input_files/customers
-    customer_path = os.path.join(in_path, "customers")
+    customer_path = os.path.normpath(os.path.join(in_path, "customers"))
 
     for file in os.listdir(in_path):
-
-        if re.search(r"customer", str_normalize(file)) and os.path.isdir(
-            f"{in_path}/{file}"):  # fmt: skip
+        if re.search(r"customer", str_normalize(file)) and os.path.isdir(f"{in_path}/{file}"):  # fmt: skip
             break
     else:
-        raise FileNotFoundError("Please create a customer folder")
+        raise FileNotFoundError("Please create a customer folder.")
 
     if len(os.listdir(customer_path)) == 0:
-        raise FileNotFoundError("Customer Folder is Empty")
+        raise FileNotFoundError("Customer folder is empty.")
 
     #! Create functionality for CSV
+
     # Create customer_dct from all files in customer folder
     customer_dct = {}
     for i in os.listdir(customer_path):
@@ -80,12 +101,14 @@ def inp(path: str) -> pd.DataFrame:
     customer_dct = {
         key.removesuffix(".xlsx"): value for key, value in customer_dct.items()
     }
+
     return invoice_data, qbo, customer_dct
 
 
 def out(final_df: pd.DataFrame, qbo_found: pd.DataFrame) -> None:
 
-    print("Writing Excel")
+    display("Writing Excel")
+    clear_output(wait=True)
 
     cur_path = os.getcwd()
     output_dir = os.path.join(cur_path, "output_files")
@@ -94,7 +117,7 @@ def out(final_df: pd.DataFrame, qbo_found: pd.DataFrame) -> None:
     target_path = os.path.join(
         cur_path,
         "output_files",
-        f"final_df_{datetime.now().strftime("%Y-%m-%d_%H:%M:%S")}",
+        f"final_df_{datetime.now().strftime('%Y-%m-%d_%H:%M')}",
     )
 
     with pd.ExcelWriter(f"{target_path}.xlsx") as writer:
@@ -103,18 +126,18 @@ def out(final_df: pd.DataFrame, qbo_found: pd.DataFrame) -> None:
         qbo_found.to_excel(writer, sheet_name="qbo_found")
 
 
-def main(
-    invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict
-) -> pd.DataFrame:
+def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict ) -> pd.DataFrame:  # fmt: skip
 
-    print("Pre-Processing")
+    display("Pre-Processing")
+    clear_output(wait=True)
     # Pre-process
     convert_floats2ints(invoice_data)
     convert_floats2ints(qbo)
     for df in customer_dct.values():
         convert_floats2ints(df)
 
-    print("Comparing FedEx Invoice to QBO")
+    display("Comparing FedEx Invoice to QBO")
+    clear_output(wait=True)
     # Compare FedEx invoice to QBO
     qbo_found, qbo_not_found = compare_qbo(qbo, invoice_data)
 
@@ -127,7 +150,8 @@ def main(
     reference_matches = list()
     receiver_matches = list()
 
-    print("Searching through Extensiv tables for reference and receiver info matches")
+    display("Searching through Extensiv tables for reference and receiver info matches")
+    clear_output(wait=True)
     # Loop through Extensiv tables and find matches
     for customer, dataframe in tqdm(customer_dct.items(), smoothing=0.1):
 
@@ -143,11 +167,12 @@ def main(
             compare_receiver_info(invoice_data_receiver_info, extensiv_receiver_info)
         )
 
-        final_df = make_final_df(reference_matches, receiver_matches, qbo_not_found)
+    final_df = make_final_df(reference_matches, receiver_matches, qbo_not_found)
 
     final_df = final_df.drop(columns=["Pattern"])
 
-    print("Matching Completed")
+    display("Matching Completed")
+    clear_output(wait=True)
 
     return final_df, qbo_found
 
@@ -159,4 +184,5 @@ if __name__ == "__main__":
     )
     final_df, qbo_found = main(invoice_data, qbo, customer_dct)
     out(final_df, qbo_found)
-    print("All done")
+    display("All done")
+    clear_output(wait=True)
