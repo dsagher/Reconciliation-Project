@@ -1,11 +1,7 @@
 import os
 from datetime import datetime
-
-# Third-party imports
 import pandas as pd
 from tqdm import tqdm
-
-# Local application imports
 from pattern_match import *
 from processing import convert_floats2ints
 
@@ -21,7 +17,7 @@ def inp(path: str) -> pd.DataFrame:
         raise FileNotFoundError("Path does not exist")
 
     for file in os.listdir(path):
-        if re.search(r"input(?:_files)?", str_normalize(file)):
+        if re.search(r"input(?:_+files)?", str_normalize(file)):
             break
     else:
         raise FileNotFoundError("Input Files folder not found")
@@ -29,13 +25,13 @@ def inp(path: str) -> pd.DataFrame:
     in_path = os.path.join(path, "input_files")
 
     for file in os.listdir(in_path):
-        if re.search(r"invoice(?:_data)?", str_normalize(file)):
+        if re.search(r"invoice(?:_+data)?", str_normalize(file)):
             break
     else:
         raise FileNotFoundError("Invoice Data not found")
 
     for file in os.listdir(in_path):
-        if re.search(r"qbo", str_normalize(file)):
+        if re.search(r"(qbo|quickbooks)", str_normalize(file)):
             break
     else:
         raise FileNotFoundError("QBO not found")
