@@ -49,7 +49,9 @@ def inp(path: str) -> pd.DataFrame:
                 sheet_name=f"{i.rstrip('.xlsx')}",
             )
         # Load qbo
-        elif str_normalize(i).startswith("qbo"):
+        elif str_normalize(i).startswith("qbo") or str_normalize(i).startswith(
+            "quickbooks"
+        ):
 
             cur_path = os.path.join(in_path, i)
             qbo = pd.read_excel(cur_path)

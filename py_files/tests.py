@@ -69,17 +69,38 @@ class TestIO(unittest.TestCase):
 
     def test_naming(self):
 
+        os.remove(self.invoice_data)
+        os.remove(self.qbo)
+
         self.invoice_data = os.path.join(self.input_files, "INvoIce DatA.xlsx")
         self.qbo = os.path.join(self.input_files, "qBo CustOmers.xlsx")
 
+        self.create_excel_file(self.invoice_data, worksheet_name="INvoIce DatA")
+        self.create_excel_file(self.qbo, worksheet_name="qBo CustOmers")
+
         inp(self.temp_dir_name)
 
-        self.invoice_data = os.path.join(self.input_files, "INvoise_dayta.xlsx")
-        self.qbo = os.path.join(self.input_files, "cookbooks.xlsx")
+        os.remove(self.qbo)
 
-        print("DIR", os.listdir(self.temp_dir_name))
-        # with self.assertRaises(FileNotFoundError):
-        #     inp(self.temp_dir_name)
+        self.qbo = os.path.join(self.input_files, "Quickbooks.xlsx")
+        self.create_excel_file(self.qbo, worksheet_name="Quickbooks")
+
+        inp(self.temp_dir_name)
+
+        os.remove(self.invoice_data)
+        os.remove(self.qbo)
+
+        self.invoice_data_wrong = os.path.join(self.input_files, "INvoise_dayta.xlsx")
+        self.qbo_wrong = os.path.join(self.input_files, "cookbooks.xlsx")
+
+        self.create_excel_file(self.qbo_wrong, worksheet_name="cookbooks.xlsx")
+        self.create_excel_file(
+            self.invoice_data_wrong, worksheet_name="INvoise_dayta.xlsx"
+        )
+
+        with self.assertRaises(FileNotFoundError):
+            inp(self.temp_dir_name)
 
 
-unittest.main()
+if __name__ == "__main__":
+    unittest.main()
