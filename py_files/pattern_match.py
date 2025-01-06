@@ -1,11 +1,14 @@
 import pandas as pd
 import re as re
 import numpy as np
+from Dataset import Dataset
 
 
 pd.set_option("display.max_columns", 500)
 
 ## **Invoice Data** <-> **QBO**
+
+Dataset_customer = None
 
 
 ### - Compare **Invoice Data** [`Customer PO #`] to **QBO** [`Display_Name`]
@@ -15,7 +18,11 @@ def compare_qbo(qbo: pd.DataFrame, invoice_data: pd.DataFrame) -> pd.DataFrame:
     Input: Original QuickBooks and FedEx Invoice file
     Output: Pandas DataFrame with values not found in QuickBooks
     """
-
+    Dataset_qbo = Dataset(name="qbo")
+    Dataset_invoice = Dataset(name="invoice")
+    # print(type(qbo))
+    Dataset_qbo.get_shape(qbo)
+    Dataset_invoice.get_shape(invoice_data)
     # ? is 'Display_Name' the only key to compare against?
 
     qbo_found = pd.merge(
@@ -43,7 +50,21 @@ def compare_qbo(qbo: pd.DataFrame, invoice_data: pd.DataFrame) -> pd.DataFrame:
         on="Customer PO #",
         how="left",
     )
-    return qbo_found, qbo_not_found
+
+    Dataset_found = Dataset("qbo_found", invoice_data)
+    Dataset_not_found = Dataset("qbo_not_found", invoice_data)
+
+    Dataset_found.get_shape(qbo_found)
+    Dataset_not_found.get_shape(qbo_not_found)
+
+    return (
+        qbo_found,
+        qbo_not_found,
+        Dataset_found,
+        Dataset_not_found,
+        Dataset_invoice,
+        Dataset_qbo,
+    )
 
 
 ## **Invoice Data** [`Reference`] <-> **Extensiv** [`Reference`]
@@ -71,6 +92,9 @@ def find_extensiv_reference_columns(extensiv_table: pd.DataFrame, qbo_not_found:
     Notes: May not need Total Charges and Tracking # in the end
     """
 
+    global Dataset_customer
+    Dataset_customer = Dataset(customer)
+
     def find_col_match(extensiv_table: pd.DataFrame, ref_pattern: pd.Series) -> list:
         """
         Function: Subfunction to iterate through each of the patterns in FedEx Invoice
@@ -86,6 +110,7 @@ def find_extensiv_reference_columns(extensiv_table: pd.DataFrame, qbo_not_found:
                 if re.fullmatch(ref_pattern, str(value)):
 
                     col_lst.add(col.strip())
+                    break
 
         if col_lst:
             return col_lst
@@ -107,6 +132,7 @@ def find_extensiv_reference_columns(extensiv_table: pd.DataFrame, qbo_not_found:
 
         match_lst = find_col_match(extensiv_table, qbo_not_found["Pattern"][i])
 
+        #! Maybe could just do if v not in match_dct instead of doing suffix maker
         if match_lst is not None and not pd.isna(v):
 
             match_dct[v] = {
@@ -114,6 +140,8 @@ def find_extensiv_reference_columns(extensiv_table: pd.DataFrame, qbo_not_found:
                 "Tracking #": (qbo_not_found["Tracking #"][i]),
                 "Customer": customer,
             }
+
+    Dataset_customer.set_pattern_matches(match_dct)
 
     return match_dct
 
@@ -140,6 +168,8 @@ def find_value_match(
                 base_reference = re.sub(r"-s\d+$", "", str(reference))
 
                 if val == reference or val == base_reference:
+                    Dataset_customer.append_match(val)
+                    Dataset_customer.count_match()
 
                     match_entry = {
                         "Reference": base_reference,
