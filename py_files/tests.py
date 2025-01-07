@@ -37,25 +37,30 @@ class TestIO(unittest.TestCase):
         self.temp_dir.cleanup()
 
     def create_excel_file(self, file_path, worksheet_name):
-        
+
+        # Create dummy Excel file
         workbook = xlsxwriter.Workbook(file_path)
         worksheet = workbook.add_worksheet(worksheet_name)
         worksheet.write(0, 0, "Sample Data")  # Add some data
         workbook.close()
 
     def test_file_existence(self):
+
+        # Test IO when everything is present
         inp(self.temp_dir_name)
 
     def test_invoice_non_exist(self):
         #!
+        # Test IO when invoice_data is not present
         os.remove(self.invoice_data)
 
         with self.assertRaises(FileNotFoundError):
             self.logger.info(inp(self.temp_dir_name))
 
     def test_qbo_non_exist(self):
-        #!
-
+        #! Error is not being raised at beginning of function and is being
+        #! caught at the Return
+        # Test IO when qbo is not present
         os.remove(self.qbo)
         with self.assertRaises(FileNotFoundError):
             inp(self.temp_dir_name)
@@ -63,22 +68,29 @@ class TestIO(unittest.TestCase):
             inp(self.temp_dir_name)
 
     def test_customer_file_non_exist(self):
+
+        # Test IO when no customer file is present
         os.remove(self.test_customer)
         with self.assertRaises(FileNotFoundError):
             inp(self.temp_dir_name)
 
     def test_customer_folder_non_exist(self):
+
+        # Test IO when no customer folder is present
         shutil.rmtree(self.customers)
         with self.assertRaises(FileNotFoundError):
             inp(self.temp_dir_name)
 
     def test_input_files_non_exist(self):
+
+        # Test IO when no input_files folder is present
         shutil.rmtree(self.input_files)
         with self.assertRaises(FileNotFoundError):
             inp(self.temp_dir_name)
 
     def test_customer_file_not_folder(self):
 
+        # Test IO when customer file is present but no customer folder is present
         shutil.rmtree(self.customers)
         customer_file = os.path.join(self.input_files, "customers")
         self.create_excel_file(customer_file, worksheet_name="customer_sheet")
@@ -87,6 +99,7 @@ class TestIO(unittest.TestCase):
 
     def test_name_qbo_invoice_data(self):
 
+        # Test IO when invoice_data and qbo is spelled funky
         os.remove(self.invoice_data)
         os.remove(self.qbo)
 

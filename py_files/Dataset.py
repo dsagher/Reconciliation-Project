@@ -41,17 +41,6 @@ class Dataset:
     def row_diff(self):
         return len(self.original_dataset) - self.row_num
 
-    @property
-    def unique_values(self):
-        pass
-
-    @unique_values.setter
-    def unique_values(self):
-        pass
-
-    def match_in_invoice(self):
-        pass
-
     def set_pattern_matches(self, match_dct):
         self._matches = match_dct
 
