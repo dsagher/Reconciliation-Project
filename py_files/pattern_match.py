@@ -6,6 +6,10 @@ from Dataset import Dataset
 pd.set_option("display.max_columns", 500)
 
 Dataset_customer = None
+Dataset_qbo = None
+Dataset_invoice = None
+Dataset_found = None
+Dataset_not_found = None
 
 
 def compare_qbo(qbo: pd.DataFrame, invoice_data: pd.DataFrame) -> pd.DataFrame:
@@ -14,10 +18,19 @@ def compare_qbo(qbo: pd.DataFrame, invoice_data: pd.DataFrame) -> pd.DataFrame:
     Input: Original QuickBooks and FedEx Invoice file
     Output: Pandas DataFrame with values not found in QuickBooks
     """
-    # Initialize qbo and invoice_data class instances
+    # Declare global class objects
+    global Dataset_qbo
+    global Dataset_invoice
+    global Dataset_found
+    global Dataset_not_found
+
+    # Define class objects
     Dataset_qbo = Dataset(name="qbo")
     Dataset_invoice = Dataset(name="invoice")
+    Dataset_found = Dataset("qbo_found", invoice_data)
+    Dataset_not_found = Dataset("qbo_not_found", invoice_data)
 
+    # Get shapes for qbo and invoice_data class objects
     Dataset_qbo.get_shape(qbo)
     Dataset_invoice.get_shape(invoice_data)
 
@@ -51,23 +64,12 @@ def compare_qbo(qbo: pd.DataFrame, invoice_data: pd.DataFrame) -> pd.DataFrame:
         how="left",
     )
 
-    # Instantiate and populate Dataset instances for qbo_found and qbo_not_found
-    Dataset_found = Dataset("qbo_found", invoice_data)
-    Dataset_not_found = Dataset("qbo_not_found", invoice_data)
-
+    # Get shape for qbo_found and qbo_not_found class objects
     Dataset_found.get_shape(qbo_found)
     Dataset_not_found.get_shape(qbo_not_found)
 
-    #! Might not keep return of class objects. Need to figure out global variable situation.
     # Returning DataFrames and Dataset classes objects
-    return (
-        qbo_found,
-        qbo_not_found,
-        Dataset_found,
-        Dataset_not_found,
-        Dataset_invoice,
-        Dataset_qbo,
-    )
+    return (qbo_found, qbo_not_found)
 
 
 def reg_tokenizer(value):
