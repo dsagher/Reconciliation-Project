@@ -80,10 +80,8 @@ def inp(path: str) -> pd.DataFrame:
         # Load qbo
         elif str_normalize(i).startswith("qbo") or str_normalize(i).startswith("quickbooks"):  # fmt: skip
 
-            # Get current path
             cur_path = os.path.join(in_path, i)
 
-            # Read Excel
             qbo = pd.read_excel(cur_path)
 
     # Create customer folder path -> root/input_files/customer/

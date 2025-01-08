@@ -12,10 +12,14 @@ class Dataset:
         self.original_dataset = original_dataset
         self._row_num = 0
         self._column_num = 0
-        self.match_lst = []
-        self.counter = 0
+        self.reference_match_lst = []
+        self.receiver_match_lst = []
+        self.reference_counter = 0
+        self.final_match_count = 0
+        self.receiver_counter = 0
+        self.final_counter = 0
 
-    def get_shape(self, dataset: pd.DataFrame):
+    def set_shape(self, dataset: pd.DataFrame):
         self._row_num = dataset.shape[0]
         self._column_num = dataset.shape[1]
 
@@ -41,6 +45,9 @@ class Dataset:
     def row_diff(self):
         return len(self.original_dataset) - self.row_num
 
+    def get_name(self):
+        return self.name
+
     def set_pattern_matches(self, match_dct):
         self._matches = match_dct
 
@@ -50,14 +57,35 @@ class Dataset:
     def get_pattern_match_ref(self):
         return list(self._matches.keys())
 
-    def append_match(self, match):
-        self.match_lst.append(match)
+    def append_reference_match(self, match):
+        self.reference_match_lst.append(match)
 
-    def count_match(self):
-        self.counter += 1
+    def count_reference_match(self):
+        self.reference_counter += 1
 
-    def get_match_count(self):
-        return self.counter
+    def get_reference_match_count(self):
+        return self.reference_counter
 
-    def get_matches(self):
-        return self.match_lst
+    def get_reference_matches(self):
+        return self.reference_match_lst
+
+    def count_receiver_match(self):
+        self.receiver_counter += 1
+
+    def get_receiver_match_count(self):
+        return self.receiver_counter
+
+    def append_receiver_match(self, value):
+        self.receiver_match_lst.append(value)
+
+    def get_receiver_matches(self):
+        return self.receiver_match_lst
+
+    def get_customer_match_count(self):
+        return self.receiver_counter + self.reference_counter
+
+    def count_final_matches(self):
+        self.final_counter += 1
+
+    def get_final_count(self):
+        return self.final_counter

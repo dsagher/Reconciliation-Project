@@ -7,13 +7,15 @@ Dataset_qbo = None
 Dataset_invoice = None
 Dataset_found = None
 Dataset_not_found = None
+Dataset_final = None
 
 
 def compare_qbo(qbo: pd.DataFrame, invoice_data: pd.DataFrame) -> pd.DataFrame:
     """
     Function: Compares FedEx invoice with QuickBooks via keys 'Customer PO #' and 'Display_Name'
     Input: Original QuickBooks and FedEx Invoice file
-    Output: Pandas DataFrame with values not found in QuickBooks
+    Output: qbo_not found: DataFrame with values not in QBO
+            qbo_found: DataFrame with values found in QBO
     """
     # Declare global class objects
     global Dataset_qbo
@@ -28,8 +30,8 @@ def compare_qbo(qbo: pd.DataFrame, invoice_data: pd.DataFrame) -> pd.DataFrame:
     Dataset_not_found = Dataset("qbo_not_found", invoice_data)
 
     # Get shapes for qbo and invoice_data class objects
-    Dataset_qbo.get_shape(qbo)
-    Dataset_invoice.get_shape(invoice_data)
+    Dataset_qbo.set_shape(qbo)
+    Dataset_invoice.set_shape(invoice_data)
 
     # ? is 'Display_Name' the only key to compare against?
     # Merge qbo and invoice_data via Customer PO # and Display_Name via inner merge
@@ -62,8 +64,8 @@ def compare_qbo(qbo: pd.DataFrame, invoice_data: pd.DataFrame) -> pd.DataFrame:
     )
 
     # Get shape for qbo_found and qbo_not_found class objects
-    Dataset_found.get_shape(qbo_found)
-    Dataset_not_found.get_shape(qbo_not_found)
+    Dataset_found.set_shape(qbo_found)
+    Dataset_not_found.set_shape(qbo_not_found)
 
     # Returning DataFrames and Dataset classes objects
     return (qbo_found, qbo_not_found)
@@ -184,8 +186,6 @@ def find_value_match(extensiv_table: pd.DataFrame, reference_columns: dict) -> l
 
                 # Create new dictionary entry if match found and populate Dataset class
                 if val == reference or val == base_reference:
-                    Dataset_customer.append_match(val)
-                    Dataset_customer.count_match()
 
                     match_entry = {
                         "Reference": base_reference,
@@ -197,6 +197,8 @@ def find_value_match(extensiv_table: pd.DataFrame, reference_columns: dict) -> l
 
                     # Append to list
                     if match_entry not in match_lst:
+                        Dataset_customer.append_reference_match(val)
+                        Dataset_customer.count_reference_match()
                         match_lst.append(match_entry)
 
     return match_lst
@@ -271,6 +273,9 @@ def compare_receiver_info(invoice_data_receiver_info: dict, extensiv_receiver_in
                     "Customer": extensiv_receiver_info[e]["Customer Identifier"],
                 }
 
+                Dataset_customer.count_receiver_match()
+                Dataset_customer.append_receiver_match(match_entry)
+
                 #! How is match_entry compared to those already in list?
                 #! Ex: if there is a matched Name, but not a matched Company, will it be appended?
                 if match_entry not in match_lst:
@@ -284,6 +289,9 @@ def make_final_df(
     receiver_matches: list[dict],
     invoice_data_not_qbo: pd.DataFrame,
 ) -> pd.DataFrame:
+
+    global Dataset_final
+    Dataset_final = Dataset("Final")
 
     try:
 
@@ -299,20 +307,18 @@ def make_final_df(
             for dct in final_matches_lst:
 
                 if "Reference" in dct and dct["Reference"] == row["Reference"]:
-                    invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Name"]
+                    invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Customer"]
+                    Dataset_final.count_final_matches()
                 elif "Address" in dct and dct["Address"] == row["Receiver Address"]:
                     invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Customer"]
+                    Dataset_final.count_final_matches()
                 elif "Name" in dct and dct["Name"] == row["Receiver Name"]:
                     invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Customer"]
+                    Dataset_final.count_final_matches()
                 elif "Company" in dct and dct["Company"] == row["Receiver Company"]:
                     invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Customer"]
+                    Dataset_final.count_final_matches()
 
-                #! Not sure what this is doing here
-                elif "Reference" in dct:
-                    try:
-                        dct["Reference"] = int(dct["Reference"])
-                    except ValueError:
-                        pass
     #! Or this
     except TypeError:
         pass

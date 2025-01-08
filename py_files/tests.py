@@ -10,7 +10,6 @@ class TestIO(unittest.TestCase):
 
     def setUp(self):
 
-        "-----------------------------------------"
         # Create temporary project folder
         self.temp_dir = tempfile.TemporaryDirectory()
         self.temp_dir_name = self.temp_dir.name
