@@ -1,7 +1,4 @@
-import pandas as pd
 import numpy as np
-
-pd.set_option("display.max_columns", 500)
 
 
 def convert_floats2ints(df):

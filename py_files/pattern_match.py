@@ -1,9 +1,6 @@
 import pandas as pd
 import re as re
-import numpy as np
 from Dataset import Dataset
-
-pd.set_option("display.max_columns", 500)
 
 Dataset_customer = None
 Dataset_qbo = None
