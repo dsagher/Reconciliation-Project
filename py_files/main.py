@@ -20,13 +20,22 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict ) -> 
     print("Comparing FedEx Invoice to QBO")
 
     # Compare FedEx invoice to QBO
-    qbo_found, qbo_not_found = pm.compare_qbo(qbo, invoice_data)
+    # qbo_found, qbo_not_found = pm.compare_qbo(qbo, invoice_data)
+    qbo_pattern_match = pm.PatternMatch()
+
+    qbo_found, qbo_not_found = qbo_pattern_match.compare_qbo(
+        qbo=qbo, invoice_data=invoice_data
+    )
 
     # Create Pattern Column
-    qbo_not_found["Pattern"] = qbo_not_found["Reference"].apply(pm.reg_tokenizer)
+    qbo_not_found["Pattern"] = qbo_not_found["Reference"].apply(
+        qbo_pattern_match.reg_tokenizer
+    )
 
     # Extract receiver info from qbo_not_found into dicts
-    invoice_data_receiver_info = pm.create_invoice_data_receiver_info(qbo_not_found)
+    invoice_data_receiver_info = qbo_pattern_match.create_invoice_data_receiver_info(
+        qbo_not_found
+    )
 
     print("Searching through Extensiv tables for reference and receiver info matches")
     reference_matches = list()
@@ -36,19 +45,26 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict ) -> 
     # Loop through Extensiv tables and find matches
     for customer, dataframe in tqdm(customer_dct.items(), smoothing=0.1):
 
+        customer_pattern_match = pm.PatternMatch(customer)
         # Outputs dict of dicts
-        reference_columns = pm.find_extensiv_reference_columns(
+        reference_columns = customer_pattern_match.find_extensiv_reference_columns(
             dataframe, qbo_not_found, customer
         )
         # find_value_match() outputs list of dicts of matches in Extensiv Table
-        reference_matches.extend(pm.find_value_match(dataframe, reference_columns))
+        reference_matches.extend(
+            customer_pattern_match.find_value_match(dataframe, reference_columns)
+        )
 
         # Extensiv receiver info in dict
-        extensiv_receiver_info = pm.create_extensiv_receiver_info(dataframe)
+        extensiv_receiver_info = customer_pattern_match.create_extensiv_receiver_info(
+            dataframe
+        )
 
         # Adds matches of receiver info list
         receiver_matches.extend(
-            pm.compare_receiver_info(invoice_data_receiver_info, extensiv_receiver_info)
+            customer_pattern_match.compare_receiver_info(
+                invoice_data_receiver_info, extensiv_receiver_info
+            )
         )
 
         message[customer] = {
