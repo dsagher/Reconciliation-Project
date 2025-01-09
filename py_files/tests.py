@@ -3,7 +3,7 @@ import tempfile
 import os
 import shutil
 import xlsxwriter
-from file_io import inp, out
+from file_io import get_input, output
 
 
 class TestIO(unittest.TestCase):
@@ -46,7 +46,7 @@ class TestIO(unittest.TestCase):
     def test_file_existence(self):
 
         # Test IO when everything is present
-        inp(self.temp_dir_name)
+        get_input(self.temp_dir_name)
 
     def test_invoice_non_exist(self):
         #!
@@ -62,30 +62,30 @@ class TestIO(unittest.TestCase):
         # Test IO when qbo is not present
         os.remove(self.qbo)
         with self.assertRaises(FileNotFoundError):
-            inp(self.temp_dir_name)
+            get_input(self.temp_dir_name)
         with self.assertRaises(UnboundLocalError):
-            inp(self.temp_dir_name)
+            get_input(self.temp_dir_name)
 
     def test_customer_file_non_exist(self):
 
         # Test IO when no customer file is present
         os.remove(self.test_customer)
         with self.assertRaises(FileNotFoundError):
-            inp(self.temp_dir_name)
+            get_input(self.temp_dir_name)
 
     def test_customer_folder_non_exist(self):
 
         # Test IO when no customer folder is present
         shutil.rmtree(self.customers)
         with self.assertRaises(FileNotFoundError):
-            inp(self.temp_dir_name)
+            get_input(self.temp_dir_name)
 
     def test_input_files_non_exist(self):
 
         # Test IO when no input_files folder is present
         shutil.rmtree(self.input_files)
         with self.assertRaises(FileNotFoundError):
-            inp(self.temp_dir_name)
+            get_input(self.temp_dir_name)
 
     def test_customer_file_not_folder(self):
 
@@ -94,7 +94,7 @@ class TestIO(unittest.TestCase):
         customer_file = os.path.join(self.input_files, "customers")
         self.create_excel_file(customer_file, worksheet_name="customer_sheet")
         with self.assertRaises(FileNotFoundError):
-            inp(self.temp_dir_name)
+            get_input(self.temp_dir_name)
 
     def test_name_qbo_invoice_data(self):
 
@@ -108,7 +108,7 @@ class TestIO(unittest.TestCase):
         self.create_excel_file(self.invoice_data, worksheet_name="INvoIce DatA")
         self.create_excel_file(self.qbo, worksheet_name="qBo CustOmers")
 
-        inp(self.temp_dir_name)
+        get_input(self.temp_dir_name)
 
     def test_name_qbo(self):
         #!
@@ -117,7 +117,7 @@ class TestIO(unittest.TestCase):
         self.qbo = os.path.join(self.input_files, "Quickbooks.xlsx")
         self.create_excel_file(self.qbo, worksheet_name="Quickbooks")
 
-        inp(self.temp_dir_name)
+        get_input(self.temp_dir_name)
 
         os.remove(self.invoice_data)
         os.remove(self.qbo)
@@ -131,7 +131,7 @@ class TestIO(unittest.TestCase):
         )
 
         with self.assertRaises(FileNotFoundError):
-            inp(self.temp_dir_name)
+            get_input(self.temp_dir_name)
 
 
 if __name__ == "__main__":

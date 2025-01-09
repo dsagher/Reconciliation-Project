@@ -1,24 +1,24 @@
 import os
-from datetime import datetime
+import re
 import pandas as pd
 from tqdm import tqdm
-import re
 from typing import Tuple
+from datetime import datetime
 
 
-def str_normalize(str: str) -> str:
+def string_normalize(str: str) -> str:
     return str.lower().strip().replace(" ", "_")
 
 
 def check_file_exists(lst: list, pattern: str) -> Tuple[bool, str]:
 
     for file in lst:
-        if re.search(pattern, str_normalize(file), flags=re.IGNORECASE):
+        if re.search(pattern, string_normalize(file), flags=re.IGNORECASE):
             return True, file
     return False, False
 
 
-def inp(path: str) -> pd.DataFrame:
+def get_input(path: str) -> pd.DataFrame:
 
     # Define root path
     original_path = os.path.normpath(path)
@@ -55,7 +55,7 @@ def inp(path: str) -> pd.DataFrame:
 
         #! Could make more flexible with RegEx
         # Check if file is invoice_data
-        if str_normalize(i).startswith("invoice_data"):
+        if string_normalize(i).startswith("invoice_data"):
 
             # Get path of current file
             cur_path = os.path.join(in_path, i)
@@ -78,7 +78,7 @@ def inp(path: str) -> pd.DataFrame:
                 raise ValueError(f"Error reading Excel file '{cur_path}': {e}.")
 
         # Load qbo
-        elif str_normalize(i).startswith("qbo") or str_normalize(i).startswith("quickbooks"):  # fmt: skip
+        elif string_normalize(i).startswith("qbo") or string_normalize(i).startswith("quickbooks"):  # fmt: skip
 
             cur_path = os.path.join(in_path, i)
 
@@ -118,7 +118,7 @@ def inp(path: str) -> pd.DataFrame:
     return invoice_data, qbo, customer_dct
 
 
-def out(final_df: pd.DataFrame, qbo_found: pd.DataFrame) -> None:
+def output(final_df: pd.DataFrame, qbo_found: pd.DataFrame) -> None:
 
     print("Writing Excel")
 
@@ -147,8 +147,8 @@ def out(final_df: pd.DataFrame, qbo_found: pd.DataFrame) -> None:
 
 if __name__ == "__main__":
 
-    invoice_data, qbo, customer_dct = inp(
+    invoice_data, qbo, customer_dct = get_input(
         path=input("File Path (or press Enter for current directory): ") or os.getcwd()
     )
-    # out(final_df, qbo_found)
+    # output(final_df, qbo_found)
     pass

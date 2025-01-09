@@ -1,11 +1,11 @@
+import pattern_match as pm
+from processing import convert_floats2ints
+from file_io import get_input, output
+
 import os
 import pandas as pd
 from tqdm import tqdm
-import pattern_match as pm
-from processing import convert_floats2ints
-from file_io import inp, out
 from pprint import pprint
-
 
 def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict ) -> pd.DataFrame:  # fmt: skip
 
@@ -83,10 +83,10 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict ) -> 
 
 if __name__ == "__main__":
 
-    invoice_data, qbo, customer_dct = inp(
+    invoice_data, qbo, customer_dct = get_input(
         path=input("File Path (or press Enter for current directory): ") or os.getcwd()
     )
     final_df, qbo_found = main(invoice_data, qbo, customer_dct)
-    # out(final_df, qbo_found)
+    # output(final_df, qbo_found)
     print("All done")
     # pass
