@@ -54,7 +54,7 @@ class TestIO(unittest.TestCase):
         os.remove(self.invoice_data)
 
         with self.assertRaises(FileNotFoundError):
-            self.logger.info(inp(self.temp_dir_name))
+            self.logger.info(get_input(self.temp_dir_name))
 
     def test_qbo_non_exist(self):
         #! Error is not being raised at beginning of function and is being

@@ -1,13 +1,7 @@
 import pandas as pd
 import re as re
 from Dataset import Dataset
-
-Dataset_customer = None
-Dataset_qbo = None
-Dataset_invoice = None
-Dataset_found = None
-Dataset_not_found = None
-Dataset_final = None
+import multiprocessing
 
 
 def compare_qbo(qbo: pd.DataFrame, invoice_data: pd.DataFrame) -> pd.DataFrame:
@@ -17,21 +11,6 @@ def compare_qbo(qbo: pd.DataFrame, invoice_data: pd.DataFrame) -> pd.DataFrame:
     Output: qbo_not found: DataFrame with values not in QBO
             qbo_found: DataFrame with values found in QBO
     """
-    # Declare global class objects
-    global Dataset_qbo
-    global Dataset_invoice
-    global Dataset_found
-    global Dataset_not_found
-
-    # Define class objects
-    Dataset_qbo = Dataset(name="qbo")
-    Dataset_invoice = Dataset(name="invoice")
-    Dataset_found = Dataset("qbo_found", invoice_data)
-    Dataset_not_found = Dataset("qbo_not_found", invoice_data)
-
-    # Get shapes for qbo and invoice_data class objects
-    Dataset_qbo.set_shape(qbo)
-    Dataset_invoice.set_shape(invoice_data)
 
     # ? is 'Display_Name' the only key to compare against?
     # Merge qbo and invoice_data via Customer PO # and Display_Name via inner merge
@@ -63,10 +42,6 @@ def compare_qbo(qbo: pd.DataFrame, invoice_data: pd.DataFrame) -> pd.DataFrame:
         how="left",
     )
 
-    # Get shape for qbo_found and qbo_not_found class objects
-    Dataset_found.set_shape(qbo_found)
-    Dataset_not_found.set_shape(qbo_not_found)
-
     # Returning DataFrames and Dataset classes objects
     return (qbo_found, qbo_not_found)
 
@@ -83,7 +58,12 @@ def reg_tokenizer(value):
     return final
 
 
-def find_extensiv_reference_columns(extensiv_table: pd.DataFrame, qbo_not_found: pd.DataFrame, customer: str) -> dict[dict]:  # fmt: skip
+def find_extensiv_reference_columns(
+    extensiv_table: pd.DataFrame,
+    qbo_not_found: pd.DataFrame,
+    customer: str,
+    q_return: multiprocessing.Queue,
+) -> dict[dict]:
     """
     Function: Finds all of the columns in the Extensiv table that match each 'Reference' in FedEx Invoice not in QBO
     Input: Extensiv DataFrame, FedEx Invoice DataFrame w/ added 'Pattern' column
@@ -94,8 +74,11 @@ def find_extensiv_reference_columns(extensiv_table: pd.DataFrame, qbo_not_found:
     Notes: May not need Total Charges and Tracking # in the end
     """
 
-    global Dataset_customer
-    Dataset_customer = Dataset(customer)
+    # Instantiate Manager and Dataset class objects
+    manager = multiprocessing.Manager()
+    print("Manager Gotten")
+    dataset_customer = Dataset(customer, manager)
+    print("Dataset Class instantiated")
 
     def find_col_match(
         extensiv_table: pd.DataFrame, ref_pattern: pd.Series
@@ -154,18 +137,21 @@ def find_extensiv_reference_columns(extensiv_table: pd.DataFrame, qbo_not_found:
                 "Customer": customer,
             }
 
-    # Populate Dataset class
-    Dataset_customer.set_pattern_matches(match_dct)
-
-    return match_dct
+    dataset_customer.set_pattern_matches(match_dct)
+    print("Dataset class populated")
+    q_return.put([match_dct, dataset_customer])
+    print("Queue populated")
 
 
 ### - Find Extensiv Reference Columns
 
 
-def find_value_match(extensiv_table: pd.DataFrame, reference_columns: dict) -> list[dict]:  # fmt: skip
+def find_value_match(
+    extensiv_table: pd.DataFrame, reference_columns: dict, dataset_customer: Dataset
+) -> list[dict]:
 
     match_lst = list()
+    print("3", type(dataset_customer))
 
     # Iterate through dict. First layer is references
     for reference in reference_columns:
@@ -194,11 +180,11 @@ def find_value_match(extensiv_table: pd.DataFrame, reference_columns: dict) -> l
                         "Customer": customer,
                         "Tracking #": tracking_number,
                     }
-
+                    print("4", type(dataset_customer))
                     # Append to list
                     if match_entry not in match_lst:
-                        Dataset_customer.append_reference_match(val)
-                        Dataset_customer.count_reference_match()
+                        dataset_customer.append_reference_match(val)
+                        dataset_customer.count_reference_match()
                         match_lst.append(match_entry)
 
     return match_lst

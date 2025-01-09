@@ -1,14 +1,18 @@
 import pattern_match as pm
 from processing import convert_floats2ints
 from file_io import get_input, output
+import Dataset
 
 import os
 import pandas as pd
+import multiprocessing
 from tqdm import tqdm
 from pprint import pprint
 
 def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict ) -> pd.DataFrame:  # fmt: skip
 
+    """Single Process"""
+    """---------------------------------------"""
     print("Pre-Processing")
 
     # Pre-process
@@ -33,15 +37,41 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict ) -> 
     receiver_matches = list()
     message = dict()
 
+    """End of Single Process"""
+    """----------------------------------------"""
+
     # Loop through Extensiv tables and find matches
     for customer, dataframe in tqdm(customer_dct.items(), smoothing=0.1):
 
-        # Outputs dict of dicts
-        reference_columns = pm.find_extensiv_reference_columns(
-            dataframe, qbo_not_found, customer
+        """Process 1 - Reference matching"""
+        """------------------------------------"""
+
+        # Start Reference Process and Queue with find_extensiv_reference_columns
+        q_return = multiprocessing.Queue()
+        print("Started Queue")
+        p1 = multiprocessing.Process(
+            target=pm.find_extensiv_reference_columns,
+            args=[dataframe, qbo_not_found, customer, q_return],
         )
+        p1.start()
+        print("Process started")
+
+        # Wait until process completes before moving on
+        p1.join()
+        print("Process joined")
+        # Unpack object into dictionary
+        reference_columns, dataset_customer = q_return.get()
+
+        print("Get Type", type(reference_columns))
+
         # find_value_match() outputs list of dicts of matches in Extensiv Table
-        reference_matches.extend(pm.find_value_match(dataframe, reference_columns))
+        reference_matches.extend(
+            pm.find_value_match(dataframe, reference_columns, dataset_customer)
+        )
+
+        print(reference_matches)
+        """Process 2 - Receiver Matching"""
+        """-----------------------------------"""
 
         # Extensiv receiver info in dict
         extensiv_receiver_info = pm.create_extensiv_receiver_info(dataframe)
@@ -51,32 +81,36 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict ) -> 
             pm.compare_receiver_info(invoice_data_receiver_info, extensiv_receiver_info)
         )
 
-        message[customer] = {
-            "Customer": pm.Dataset_customer.get_name(),
-            "Reference Match Count": pm.Dataset_customer.get_reference_match_count(),
-            "Receiver Match Count": pm.Dataset_customer.get_receiver_match_count(),
-            "Total Match Count": pm.Dataset_customer.get_customer_match_count(),
-            "Reference Matches": pm.Dataset_customer.get_reference_matches(),
-            "Receiver Matches": pm.Dataset_customer.get_receiver_matches(),
-        }
+        """Join Process 1 and Process 2"""
+        """-----------------------------------"""
+        # message[customer] = {
+        #     "Customer": pm.Dataset_customer.get_name(),
+        #     "Reference Match Count": pm.Dataset_customer.get_reference_match_count(),
+        #     "Receiver Match Count": pm.Dataset_customer.get_receiver_match_count(),
+        #     "Total Match Count": pm.Dataset_customer.get_customer_match_count(),
+        #     "Reference Matches": pm.Dataset_customer.get_reference_matches(),
+        #     "Receiver Matches": pm.Dataset_customer.get_receiver_matches(),
+        # }
 
+    """Single Process"""
+    """----------------------------------------"""
     # Replaces Customer PO # with Customer Name if match is found
     final_df = pm.make_final_df(reference_matches, receiver_matches, qbo_not_found)
 
     # Drop Pattern column from final DataFrame
     final_df = final_df.drop(columns=["Pattern"])
 
-    print("Matching Completed")
-    print("Values found in QBO: ", pm.Dataset_found.row_num)
-    print("Values not found in QBO: ", pm.Dataset_not_found.row_num)
+    # print("Matching Completed")
+    # print("Values found in QBO: ", pm.Dataset_found.row_num)
+    # print("Values not found in QBO: ", pm.Dataset_not_found.row_num)
 
-    for customer in message:
-        pprint(f"Customer Name: {message[customer]['Customer']}")
-        pprint(f"Reference Match Count: {message[customer]['Reference Match Count']}")
-        pprint(f"Receiver Match Count: {message[customer]['Receiver Match Count']}")
-        pprint(f"Total Match Count: {message[customer]['Total Match Count']}")
-        pprint(f"Reference Matches: {message[customer]['Reference Matches']}")
-        pprint(f"Receiver Matches: {message[customer]['Receiver Matches']}")
+    # for customer in message:
+    #     pprint(f"Customer Name: {message[customer]['Customer']}")
+    #     pprint(f"Reference Match Count: {message[customer]['Reference Match Count']}")
+    #     pprint(f"Receiver Match Count: {message[customer]['Receiver Match Count']}")
+    #     pprint(f"Total Match Count: {message[customer]['Total Match Count']}")
+    #     pprint(f"Reference Matches: {message[customer]['Reference Matches']}")
+    #     pprint(f"Receiver Matches: {message[customer]['Receiver Matches']}")
 
     return final_df, qbo_found
 
