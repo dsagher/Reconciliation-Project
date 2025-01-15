@@ -1,6 +1,6 @@
 import pandas as pd
 import re as re
-import fuzzywuzzy as fuzz
+
 
 
 class PatternMatch:
