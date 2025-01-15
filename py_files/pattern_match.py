@@ -7,14 +7,17 @@ class PatternMatch:
     def __init__(self, name: str = None):
 
         self.name = name
+
         self.receiver_matches: list = []
         self.reference_matches: list = []
-        self.found_references: set = ()
-        self.not_found_references: set = ()
+        
+        
         self.extensiv_receiver_dct: dict = {}
         self.invoice_data_receiver_dct: dict = {}
+        
         self.reference_counter: int = 0
         self.receiver_counter: int = 0
+    
 
     def count_reference(self):
         self.reference_counter += 1
@@ -56,7 +59,19 @@ class PatternMatch:
                 f"\n"
                 f"{'-' * 70 }\n"
         )
+    
+    
+    def reg_tokenizer(self, value: str) -> re.Pattern:
 
+        # Add pattern tokens to FedEx invoice table in a new column called "Reference"
+        with_letters = re.sub(r"[a-zA-Z]+", r"\\w+", str(value))
+        with_numbers = re.sub(r"\d+", r"\\d+", with_letters)
+        with_spaces = re.sub(r"\s+", r"\\s+", with_numbers)
+
+        final = re.compile(with_spaces)
+
+        return final
+    
     def compare_qbo(
         self, qbo: pd.DataFrame, invoice_data: pd.DataFrame
     ) -> pd.DataFrame:
@@ -84,11 +99,9 @@ class PatternMatch:
         qbo_found = qbo_found[invoice_cols]
 
         # Create sets of found and not found references
-        self.found_references_all = list(qbo_found["Customer PO #"])
         self.found_references_unique = set(qbo_found["Customer PO #"].unique())
-
-        self.all_references = set(invoice_data["Customer PO #"])
-        self.unmatched_references = self.all_references - self.found_references_unique
+        self.all_references_unique = set(invoice_data["Customer PO #"])
+        self.unmatched_references = self.all_references_unique - self.found_references_unique
 
         # Create new DataFrame, add Customer PO #'s, and merge with invoice_data on left merge
         qbo_not_found = pd.DataFrame(
@@ -102,20 +115,11 @@ class PatternMatch:
             how="left",
         )
 
+        qbo_not_found["Pattern"] = qbo_not_found["Reference"].apply(self.reg_tokenizer)
         # Returning DataFrames and Dataset classes objects
         return (qbo_found, qbo_not_found)
 
-    @staticmethod
-    def reg_tokenizer(value: str) -> re.Pattern:
 
-        # Add pattern tokens to FedEx invoice table in a new column called "Reference"
-        with_letters = re.sub(r"[a-zA-Z]+", r"\\w+", str(value))
-        with_numbers = re.sub(r"\d+", r"\\d+", with_letters)
-        with_spaces = re.sub(r"\s+", r"\\s+", with_numbers)
-
-        final = re.compile(with_spaces)
-
-        return final
 
     def find_matching_columns(
         self,

@@ -19,16 +19,11 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict ) -> 
     print("Comparing FedEx Invoice to QBO")
 
     # Compare FedEx invoice to QBO
-    # qbo_found, qbo_not_found = pm.compare_qbo(qbo, invoice_data)
+
     qbo_pattern_match = pm.PatternMatch()
 
     qbo_found, qbo_not_found = qbo_pattern_match.compare_qbo(
         qbo=qbo, invoice_data=invoice_data
-    )
-
-    # Create Pattern Column
-    qbo_not_found["Pattern"] = qbo_not_found["Reference"].apply(
-        qbo_pattern_match.reg_tokenizer
     )
 
     print("Searching through Extensiv tables for reference and receiver info matches")
