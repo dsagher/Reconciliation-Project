@@ -1,5 +1,6 @@
 import pandas as pd
 import re as re
+import fuzzywuzzy as fuzz
 
 
 class PatternMatch:
@@ -14,7 +15,7 @@ class PatternMatch:
         
         self.extensiv_receiver_dct: dict = {}
         self.invoice_data_receiver_dct: dict = {}
-        
+
         self.reference_counter: int = 0
         self.receiver_counter: int = 0
     
