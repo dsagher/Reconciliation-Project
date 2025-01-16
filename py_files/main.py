@@ -103,6 +103,9 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict[str,p
     final_df = customer_pattern_match.make_final_df(
         reference_matches, receiver_matches, qbo_not_found
     )
+    # final_df = customer_pattern_match.make_final_df(
+    #     reference_matches, receiver_matches, qbo_not_found
+    # )
 
     return final_df, qbo_found
 

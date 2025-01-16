@@ -60,14 +60,11 @@ class PatternMatch:
 
     def append_match(self, reference_match=None, receiver_match=None):
 
-        if receiver_match is not None or reference_match is not None:
+        if receiver_match is not None:  
+            self.receiver_matches.append(receiver_match)
 
-            if receiver_match:
-                self.receiver_matches.append(receiver_match)
-            elif reference_match:
-                self.reference_matches.append(reference_match)
-        else:
-            raise ValueError("Receiver Match or Reference Match Cannot Be None")
+        if reference_match is not None:
+            self.reference_matches.append(reference_match)
 
     def __str__(self):
 
@@ -190,7 +187,7 @@ class PatternMatch:
             return cols
 
     def find_extensiv_reference_columns(
-        self, extensiv_table: pd.DataFrame, qbo_not_found: pd.DataFrame) -> dict[dict]:  # fmt: skip
+        self, extensiv_table: pd.DataFrame, qbo_not_found: pd.DataFrame) -> dict[str,set]:  # fmt: skip
         """
         Subfunction called in compare_references() that iterates through each [Reference] and calls find_matching_columns()
         for each reference.
@@ -207,15 +204,14 @@ class PatternMatch:
         for i, v in enumerate(qbo_not_found["Reference"]):
 
             # Call column matcher function on each value in reference column
-            match_lst = self.find_matching_columns(
+            cols = self.find_matching_columns(
                 extensiv_table, qbo_not_found["Pattern"][i]
             )
 
             # Add match list to dictionary of dictionaries along with Tracking # and Customer
-            if match_lst is not None and not pd.isna(v):
-
-                match_dct[str(v)] = {"match_lst": match_lst}
-
+            if cols is not None and not pd.isna(v):
+                match_dct[str(v)] = cols
+                
         return match_dct
 
     ### - Find Extensiv Reference Columns
@@ -233,9 +229,7 @@ class PatternMatch:
         match_lst = list()
 
         # Iterate through dict. First layer is references
-        for reference in reference_columns:
-
-            columns = reference_columns[reference]["match_lst"]
+        for reference, columns in reference_columns.items():
 
             # Iterate through each pattern-matched column in Extensiv table
             for col in extensiv_table[list[columns]]:
@@ -252,7 +246,7 @@ class PatternMatch:
                             "Customer": self.name,
                         }
 
-                        # Append to list
+                        # Append to user output list and return list
                         if match_entry not in match_lst:
                             self.append_match(
                                 reference_match=f'{match_entry["Reference"]}'
@@ -350,31 +344,26 @@ class PatternMatch:
 
             for dct in final_matches_lst:
 
-                if "Reference" in dct:
-                    dct["Reference"] = str(dct["Reference"]).strip().lower()
-                if "Address" in dct:
-                    dct["Address"] = str(dct["Address"]).strip().lower()
-                if "Name" in dct:
-                    dct["Name"] = str(dct["Name"]).strip().lower()
-                if "Company" in dct:
-                    dct["Company"] = str(dct["Company"]).strip().lower()
-
-                if "Reference" in dct and dct["Reference"] == row["Reference"]:
+                if "Reference" in dct and str(dct["Reference"]).strip().lower() == \
+                    str(row["Reference"]).strip().lower():
 
                     self.count_reference()
                     invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Customer"]
 
-                elif "Address" in dct and dct["Address"] == row["Receiver Address"]:
+                elif "Address" in dct and str(dct["Address"]).strip().lower() == \
+                    str(row["Receiver Address"]).strip().lower():
 
                     invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Customer"]
                     self.count_receiver()
 
-                elif "Name" in dct and dct["Name"] == row["Receiver Name"]:
+                elif "Name" in dct and str(dct["Name"]).strip().lower() == \
+                    str(row["Receiver Name"]).strip().lower():
 
                     invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Customer"]
                     self.count_receiver()
 
-                elif "Company" in dct and dct["Company"] == row["Receiver Company"]:
+                elif "Company" in dct and str(dct["Company"]).strip().lower() == \
+                    str(row["Receiver Company"]).strip().lower():
 
                     invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Customer"]
                     self.count_receiver()
