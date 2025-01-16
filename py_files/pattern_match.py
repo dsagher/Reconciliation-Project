@@ -11,6 +11,7 @@
         External:
             - pandas
             - re
+            - rapidfuzz
         Internal:
             - None
             
@@ -18,22 +19,22 @@
 
 import pandas as pd
 import re as re
+from rapidfuzz import fuzz
+
 
 class PatternMatch:
-
     """
     PatternMatch class handles the logic for comparing the FedEx invoice with Quickbooks
     and comparing [Reference] and [Receiver Name],[Receiver Company], and [Receiver Address] values
-    in FedEx invoice to find matches in Extensiv.     
-    
+    in FedEx invoice to find matches in Extensiv.
+
     Special Concerns:
         - Class handles logic for several different purposes. Considering breaking up class
           into smaller subclasses to handle QBO <-> FedEx invoice, and FedEx invoice <-> Extensiv
     """
 
-
     def __init__(self, name: str = None):
-        
+
         self.name = name
 
         """For receiever information comparison"""
@@ -44,7 +45,7 @@ class PatternMatch:
         self.receiver_matches: list = []
         self.reference_matches: list = []
         self.reference_counter: int = 0
-        self.receiver_counter: int = 0  
+        self.receiver_counter: int = 0
 
     def count_reference(self):
         self.reference_counter += 1
@@ -60,7 +61,7 @@ class PatternMatch:
 
     def append_match(self, reference_match=None, receiver_match=None):
 
-        if receiver_match is not None:  
+        if receiver_match is not None:
             self.receiver_matches.append(receiver_match)
 
         if reference_match is not None:
@@ -68,26 +69,26 @@ class PatternMatch:
 
     def __str__(self):
 
-        return (f"\n"
-                f"Customer: {self.name}\n"
-                f"{'-' * 70 }\n"
-                f"\n"
-                f"Total # of Reference Matches in Extensiv: {self.reference_counter}\n"
-                f"Unique # of Reference Matches in Extensiv: {len(self.reference_matches)}\n"
-                f"Reference Matches in Extensiv: {', \n'.join(map(str,self.reference_matches)) if not None else None}\n"
-                f"{'-' * 70 }\n"
-                f"\n"
-                f"Total # of Receiver Matches in Extensiv: {self.receiver_counter}\n"
-                f"Unique # of Receiver Matches in Extensiv: {len(self.receiver_matches)}\n"
-                f"Receiver Matches in Extensiv: {', \n'.join(map(str,self.receiver_matches)) if not None else None}\n"
-                f"\n"
-                f"{'-' * 70 }\n"
+        return (
+            f"\n"
+            f"Customer: {self.name}\n"
+            f"{'-' * 70 }\n"
+            f"\n"
+            f"Total # of Reference Matches in Extensiv: {self.reference_counter}\n"
+            f"Unique # of Reference Matches in Extensiv: {len(self.reference_matches)}\n"
+            f"Reference Matches in Extensiv: {', \n'.join(map(str,self.reference_matches)) if not None else None}\n"
+            f"{'-' * 70 }\n"
+            f"\n"
+            f"Total # of Receiver Matches in Extensiv: {self.receiver_counter}\n"
+            f"Unique # of Receiver Matches in Extensiv: {len(self.receiver_matches)}\n"
+            f"Receiver Matches in Extensiv: {', \n'.join(map(str,self.receiver_matches)) if not None else None}\n"
+            f"\n"
+            f"{'-' * 70 }\n"
         )
-    
-    
+
     def reg_tokenizer(self, value: str) -> re.Pattern:
         """Called during compare_qbo() to create [Pattern] column in FedEx invoice"""
-        
+
         # Add pattern tokens to FedEx invoice table in a new column called "Reference"
         with_letters = re.sub(r"[a-zA-Z]+", r"\\w+", str(value))
         with_numbers = re.sub(r"\d+(\.\d+)?", r"\\d+(\\.\\d+)?", with_letters)
@@ -96,7 +97,7 @@ class PatternMatch:
         final = re.compile(with_spaces)
 
         return final
-    
+
     def compare_qbo(
         self, qbo: pd.DataFrame, invoice_data: pd.DataFrame
     ) -> pd.DataFrame:
@@ -126,7 +127,9 @@ class PatternMatch:
         # Create sets of found and not found references
         self.found_references_unique = set(qbo_found["Customer PO #"].unique())
         self.all_references_unique = set(invoice_data["Customer PO #"])
-        self.unmatched_references = self.all_references_unique - self.found_references_unique
+        self.unmatched_references = (
+            self.all_references_unique - self.found_references_unique
+        )
 
         # Create new DataFrame, add Customer PO #'s, and merge with invoice_data on left merge
         qbo_not_found = pd.DataFrame(
@@ -157,10 +160,10 @@ class PatternMatch:
         :return cols: a unique set of columns in the Extensiv table with a matching pattern to current [Reference]
 
         Special Concerns:
-            - Search loop breaks when *one* match is found in each Extensiv column, and only searches 
-              up to 25 cells per column. If there are pattern matches beyond the 25th record, they will 
+            - Search loop breaks when *one* match is found in each Extensiv column, and only searches
+              up to 25 cells per column. If there are pattern matches beyond the 25th record, they will
               be missed. This is a performance saving measure. Future iterations with multiprocessing
-              can check more values in Extensiv columns. 
+              can check more values in Extensiv columns.
         """
         cols = set()
 
@@ -211,7 +214,7 @@ class PatternMatch:
             # Add match list to dictionary of dictionaries along with Tracking # and Customer
             if cols is not None and not pd.isna(v):
                 match_dct[str(v)] = cols
-                
+
         return match_dct
 
     ### - Find Extensiv Reference Columns
@@ -234,11 +237,17 @@ class PatternMatch:
             # Iterate through each pattern-matched column in Extensiv table
             for col in extensiv_table[list[columns]]:
 
-                # Iterate through each value in each column
+                # Iterate through each value in column
                 for val in extensiv_table[col]:
 
                     # Create new dictionary entry if match found and populate Dataset class
-                    if str(val) == str(reference):
+                    if (
+                        str(val).lower().strip() == str(reference).lower().strip()
+                        or fuzz.partial_ratio(
+                            str(reference).lower().strip(),
+                            str(self.name).lower().strip(),
+                        ) > 75  # fmt: skip
+                    ):
 
                         match_entry = {
                             "Reference": reference,
@@ -246,8 +255,9 @@ class PatternMatch:
                             "Customer": self.name,
                         }
 
+                        #! Taking a really long time after adding ["Reference"] to this.
                         # Append to user output list and return list
-                        if match_entry not in match_lst:
+                        if match_entry["Reference"] not in match_lst:
                             self.append_match(
                                 reference_match=f'{match_entry["Reference"]}'
                             )
@@ -302,18 +312,20 @@ class PatternMatch:
 
         # Iterate through each dict of invoice_data receiver info
         for i in self.invoice_data_receiver_dct:
-            
+
             # Iterate through each dict of extensiv receiver info
             for e in self.extensiv_receiver_dct:
 
-                # If match, create new dictionary entry
                 if (
-                    str(self.invoice_data_receiver_dct[i]["Receiver Address"]).lower().strip() # fmt: skip
-                    == str(self.extensiv_receiver_dct[e]["Receiver Address"]).lower().strip() # fmt: skip
-                    and str(self.invoice_data_receiver_dct[i]["Receiver Name"]).lower().strip()  # fmt: skip
-                    == str(self.extensiv_receiver_dct[e]["Receiver Name"]).lower().strip()  # fmt: skip
-                    and str(self.invoice_data_receiver_dct[i]["Receiver Company"]).lower().strip() # fmt: skip
-                    == str(self.extensiv_receiver_dct[e]["Receiver Company"]).lower().strip() # fmt: skip
+                    fuzz.token_set_ratio(
+                        str(self.invoice_data_receiver_dct[i]["Receiver Address"]).lower().strip(),
+                        str(self.extensiv_receiver_dct[e]["Receiver Address"]).lower().strip()) > 70
+                    and fuzz.token_set_ratio(
+                        str(self.invoice_data_receiver_dct[i]["Receiver Name"]).lower().strip(),
+                        str(self.extensiv_receiver_dct[e]["Receiver Name"]).lower().strip()) > 70
+                    and fuzz.token_set_ratio(
+                        str(self.invoice_data_receiver_dct[i]["Receiver Company"]).lower().strip(),
+                        str(self.extensiv_receiver_dct[e]["Receiver Company"]).lower().strip()) > 70  # fmt: skip
                 ):
 
                     match_entry = {
@@ -344,26 +356,38 @@ class PatternMatch:
 
             for dct in final_matches_lst:
 
-                if "Reference" in dct and str(dct["Reference"]).strip().lower() == \
-                    str(row["Reference"]).strip().lower():
+                if (
+                    "Reference" in dct
+                    and str(dct["Reference"]).strip().lower()
+                    == str(row["Reference"]).strip().lower()
+                ):
 
                     self.count_reference()
                     invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Customer"]
 
-                elif "Address" in dct and str(dct["Address"]).strip().lower() == \
-                    str(row["Receiver Address"]).strip().lower():
+                elif (
+                    "Address" in dct
+                    and str(dct["Address"]).strip().lower()
+                    == str(row["Receiver Address"]).strip().lower()
+                ):
 
                     invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Customer"]
                     self.count_receiver()
 
-                elif "Name" in dct and str(dct["Name"]).strip().lower() == \
-                    str(row["Receiver Name"]).strip().lower():
+                elif (
+                    "Name" in dct
+                    and str(dct["Name"]).strip().lower()
+                    == str(row["Receiver Name"]).strip().lower()
+                ):
 
                     invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Customer"]
                     self.count_receiver()
 
-                elif "Company" in dct and str(dct["Company"]).strip().lower() == \
-                    str(row["Receiver Company"]).strip().lower():
+                elif (
+                    "Company" in dct
+                    and str(dct["Company"]).strip().lower()
+                    == str(row["Receiver Company"]).strip().lower()
+                ):
 
                     invoice_data_not_qbo.loc[i, "Customer PO #"] = dct["Customer"]
                     self.count_receiver()
