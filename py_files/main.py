@@ -1,26 +1,37 @@
 """==========================================================================================
 
-  Title:       <Nautical_Reconciliation>
-  Author:      <Dan Sagher>
-  Date:        <12/25/24>
-  Description:
+    Title:       <Nautical_Reconciliation>
+    File: 
+    Author:      <Dan Sagher>
+    Date:        <12/25/24>
+    Description:
 
     <This tool reconciles missing or incorrect [Customer PO #] values from a FedEx invoice>
-    
+
     1. Values are first compared against Quickbooks to determine which Customer PO #'s 
-       are correct.
+    are correct.
     2. Remaining values are searched through columns of individual Extensiv tables 
-       via the FedEx invoice [Reference].
+    via the FedEx invoice [Reference].
     3. Remaining values are searched via Receiver information - [Receiver Name],
-       [Receiver Address],[Receiver Company].
+    [Receiver Address],[Receiver Company].
     4. Found values have their [Customer PO #] replaced with the name of the customer. 
 
-  Special Concerns: 
-    < - References are matched based on strict equalities, case insensitve.
-        This may result in missed values. Receiver matches are matched based on normalized strings.
-      - Fuzzy matching will be implemented to account for user input error (i.e. Main st vs. Main Street)
-      - Functionality will be added to search through [Reference 2]
-      - PatternMatch class will be broken up into smaller subclasses to avoid confusion.>
+    Dependencies:
+    External:
+        - pandas
+        - tqdm
+        - os
+    Internal:
+        - pattern_match (for pattern matching logic)
+        - processing (for data preprocessing)
+        - file_io (for input and output handling)
+
+    Special Concerns: 
+    - References are matched based on strict equalities, case insensitve.
+    This may result in missed values. Receiver matches are matched based on normalized strings.
+    - Fuzzy matching will be implemented to account for user input error (i.e. Main st vs. Main Street)
+    - Functionality will be added to search through [Reference 2]
+    - PatternMatch class will be broken up into smaller subclasses to avoid confusion.
 
 #=========================================================================================="""
 
@@ -34,7 +45,7 @@ from tqdm import tqdm
 
 def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict[str,pd.DataFrame] ) -> pd.DataFrame:  # fmt: skip
     """
-    Main function calls the preprocessing and pattern matching logic classes and methods.
+    main() function calls the preprocessing and pattern matching logic classes and methods.
 
     :param invoice_data: Pandas DataFrame of FedEx invoice
     :param qbo: Pandas DataFrame of Quickbooks customer information
@@ -54,7 +65,6 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict[str,p
     print("Comparing FedEx Invoice to QBO")
 
     # Compare FedEx invoice to QBO
-
     qbo_pattern_match = pm.PatternMatch()
 
     qbo_found, qbo_not_found = qbo_pattern_match.compare_qbo(
@@ -62,6 +72,8 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict[str,p
     )
 
     print("Searching through Extensiv tables for reference and receiver info matches")
+
+    # Compare FedEx invoice to Extensiv
 
     reference_matches = list()
     receiver_matches = list()
@@ -73,7 +85,7 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict[str,p
 
         # find_value_match() outputs list of dicts of matches in Extensiv Table
         reference_matches.extend(
-            customer_pattern_match.find_value_match(
+            customer_pattern_match.compare_references(
                 extensiv_table=dataframe, invoice_data=qbo_not_found
             )
         )
