@@ -99,7 +99,6 @@ def get_input(path: str) -> pd.DataFrame:
         raise FileNotFoundError("Customer folder is empty.")
 
     #! Create functionality for CSV
-    # Create customer_dct from all files in customer folder to feed into main()
     customer_dct = {}
 
     # Iterate through each customer in customer directory
@@ -107,6 +106,7 @@ def get_input(path: str) -> pd.DataFrame:
 
         # Read Excel into customer dictionary
         # {customer_name: pd.DataFrame}
+
         if i.endswith(".xlsx"):
             customer_dct[i] = pd.read_excel(f"{os.path.join(customer_path,i)}")
 

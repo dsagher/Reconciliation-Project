@@ -100,12 +100,10 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict[str,p
         print(customer_pattern_match)
 
     # Replaces Customer PO # with Customer Name if match is found
-    final_df = customer_pattern_match.make_final_df(
+    final_matches = pm.PatternMatch()
+    final_df = final_matches.make_final_df(
         reference_matches, receiver_matches, qbo_not_found
     )
-    # final_df = customer_pattern_match.make_final_df(
-    #     reference_matches, receiver_matches, qbo_not_found
-    # )
 
     return final_df, qbo_found
 
