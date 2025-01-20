@@ -44,20 +44,6 @@ class PatternMatch:
         """For output of stats during runtime"""
         self.receiver_matches: list = []
         self.reference_matches: list = []
-        self.reference_counter: int = 0
-        self.receiver_counter: int = 0
-
-    def count_reference(self):
-        self.reference_counter += 1
-
-    def get_reference_count(self):
-        return self.reference_counter
-
-    def count_receiver(self):
-        self.receiver_counter += 1
-
-    def get_receiver_count(self):
-        return self.receiver_counter
 
     def append_match(self, reference_match=None, receiver_match=None):
 
@@ -74,12 +60,10 @@ class PatternMatch:
             f"Customer: {self.name}\n"
             f"{'-' * 70 }\n"
             f"\n"
-            f"Total # of Reference Matches in Extensiv: {self.reference_counter}\n"
             f"Unique # of Reference Matches in Extensiv: {len(self.reference_matches)}\n"
             f"Reference Matches in Extensiv: {', \n'.join(map(str,self.reference_matches)) if not None else None}\n"
             f"{'-' * 70 }\n"
             f"\n"
-            f"Total # of Receiver Matches in Extensiv: {self.receiver_counter}\n"
             f"Unique # of Receiver Matches in Extensiv: {len(self.receiver_matches)}\n"
             f"Receiver Matches in Extensiv: {', \n'.join(map(str,self.receiver_matches)) if not None else None}\n"
             f"\n"
@@ -236,6 +220,7 @@ class PatternMatch:
 
                     # Exact match check
                     if val_str == ref_str:
+
                         if reference not in unique_references:
                             match_lst.append(
                                 {
