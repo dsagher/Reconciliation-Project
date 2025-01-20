@@ -1,3 +1,24 @@
+"""==========================================================================================
+    
+    File: file_io.py
+    Author: Dan Sagher
+    Date: 12/25/24
+    Description:
+        Contains the functions used in main.py for file input and output.
+
+    Dependencies:
+        External:
+            - os
+            - re
+            - pandas
+            - tqdm
+            - typing
+            - datetime
+        Internal:
+            - None
+
+=========================================================================================="""
+
 import os
 import re
 import pandas as pd

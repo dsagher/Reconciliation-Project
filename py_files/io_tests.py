@@ -1,8 +1,30 @@
+"""==========================================================================================
+    
+    File: io_tests.py
+    Author: Dan Sagher
+    Date: 12/25/24
+    Description:
+        Contains the unit tests for file_io.py.
+
+    Dependencies:
+        External:
+            - unittest
+            - tempfile
+            - shutil
+            - xlsxwriter
+        Internal:
+            - file_io
+
+    Special Concerns:
+        - Not catching errors related to file existence of QBO and FedEx invoice. Will be addressed.
+=========================================================================================="""
+
 import unittest
 import tempfile
 import os
 import shutil
 import xlsxwriter
+
 from file_io import get_input, output
 
 
