@@ -37,10 +37,12 @@ def get_input(path: str) -> pd.DataFrame:
             "Input Files folder not found. Expected a folder like 'input_files/' in root folder.")  # fmt: skip
 
     # Raise error if invoice_data does not exist -> root/input_files/invoice_data
-    invoice_data_exists = check_file_exists(os.listdir(in_path), r"invoice(?:_+data)?")
+    invoice_data_exists = check_file_exists(
+        os.listdir(in_path), r"(fedex)?invoice(?:_+data)?"
+    )
     if not invoice_data_exists:
         raise FileNotFoundError(
-            "Invoice Data not found. Expected a file like 'invoice_data.xlsx' in 'input_files/' folder.")  # fmt: skip
+            "Invoice Data not found. Expected a file like 'invoice_data.xlsx' or 'fedex_invoice.xlsx' in 'input_files/' folder.")  # fmt: skip
 
     # Raise error if qbo does not exist -> root/input_files/qbo
     check_qbo_exists = check_file_exists(os.listdir(in_path), r"(qbo|quickbooks)")
@@ -65,7 +67,7 @@ def get_input(path: str) -> pd.DataFrame:
             inv_sheet_names = inv_sheets.sheet_names
 
             # Check if file exists and input correct sheet and output correct sheet name
-            invoice_sheet_exists, correct_sheet = check_file_exists(inv_sheet_names, r"invoice[_\-\s]*(data)?")  # fmt: skip
+            invoice_sheet_exists, correct_sheet = check_file_exists(inv_sheet_names, r"(fedex)?invoice[_\-\s]*(data)?")  # fmt: skip
             if not invoice_sheet_exists:
                 raise FileNotFoundError(
                     f"No valid sheet found in '{in_path} for Invoice Data")  # fmt:skip

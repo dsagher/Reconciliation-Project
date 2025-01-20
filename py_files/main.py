@@ -43,11 +43,11 @@ import os
 import pandas as pd
 from tqdm import tqdm
 
-def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict[str,pd.DataFrame] ) -> pd.DataFrame:  # fmt: skip
+def main(fedex_invoice: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict[str,pd.DataFrame] ) -> pd.DataFrame:  # fmt: skip
     """
     main() function calls the preprocessing and pattern matching logic classes and methods.
 
-    :param invoice_data: Pandas DataFrame of FedEx invoice
+    :param fedex_invoice: Pandas DataFrame of FedEx invoice
     :param qbo: Pandas DataFrame of Quickbooks customer information
     :param customer_dct: Dictionary containing {customer_name: Pandas DataFrame}
     :return final_df: New FedEx invoice DataFrame containing replaced [Customer PO #] with customer_name
@@ -57,7 +57,7 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict[str,p
     print("Pre-Processing")
 
     # Pre-process
-    convert_floats2ints(invoice_data)
+    convert_floats2ints(fedex_invoice)
     convert_floats2ints(qbo)
     for df in customer_dct.values():
         convert_floats2ints(df)
@@ -68,7 +68,7 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict[str,p
     qbo_pattern_match = pm.PatternMatch()
 
     qbo_found, qbo_not_found = qbo_pattern_match.compare_qbo(
-        qbo=qbo, invoice_data=invoice_data
+        qbo=qbo, fedex_invoice=fedex_invoice
     )
 
     print("Searching through Extensiv tables for reference and receiver info matches")
@@ -86,14 +86,14 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict[str,p
         # find_value_match() outputs list of dicts of matches in Extensiv Table
         reference_matches.extend(
             customer_pattern_match.compare_references(
-                extensiv_table=dataframe, invoice_data=qbo_not_found
+                extensiv_table=dataframe, fedex_invoice=qbo_not_found
             )
         )
 
         # Adds matches of receiver info list
         receiver_matches.extend(
             customer_pattern_match.compare_receiver_info(
-                extensiv_table=dataframe, invoice_data=qbo_not_found
+                extensiv_table=dataframe, fedex_invoice=qbo_not_found
             )
         )
 
@@ -101,6 +101,7 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict[str,p
 
     # Replaces Customer PO # with Customer Name if match is found
     final_matches = pm.PatternMatch()
+
     final_df = final_matches.make_final_df(
         reference_matches, receiver_matches, qbo_not_found
     )
@@ -110,9 +111,9 @@ def main(invoice_data: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict[str,p
 
 if __name__ == "__main__":
 
-    invoice_data, qbo, customer_dct = get_input(
+    fedex_invoice, qbo, customer_dct = get_input(
         path=input("File Path (or press Enter for current directory): ") or os.getcwd()
     )
-    final_df, qbo_found = main(invoice_data, qbo, customer_dct)
+    final_df, qbo_found = main(fedex_invoice, qbo, customer_dct)
     output(final_df, qbo_found)
     print("All done")
