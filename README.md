@@ -22,9 +22,7 @@ The **Reconciliation Project** is a Python-based tool for reconciling invoice da
 
 - **Flexibility for File Type IO:** Add functionality to support additional input file types such as `.csv` for broader compatibility.
 - **Code Optimization:**
-  - Utilize modular helper functions to reduce redundancy and improve code readability.
-  - Consolidate repetitive code patterns into reusable components.
+  - Break down PatterMatch class into smaller subclasses for easier scaling.
 - **Performance Enhancements:**
-  - Rewrite pattern-matching functions to leverage vectorized Pandas operations instead of nested loops for greater efficiency.
-  - Optimize processing of large datasets to minimize runtime and memory usage.
+  - Multiprocessing for faster runtime.
 
