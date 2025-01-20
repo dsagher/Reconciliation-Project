@@ -1,3 +1,22 @@
+"""==========================================================================================
+    
+    File: processing.py
+    Author: Dan Sagher
+    Date: 12/25/24
+    Description:
+        Contains the data preprocessing functions called in main.py.
+
+    Dependencies:
+        External:
+            - numpy
+        Internal:
+            - None
+
+    Special Concerns:
+        - May move string normalization from pattern_match.py to this file for clarity
+        and testing purposes.
+=========================================================================================="""
+
 import numpy as np
 
 
