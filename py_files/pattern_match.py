@@ -154,12 +154,12 @@ class FindPatternMatches:
 
         return final
 
-    def __find_matching_columns(self,extensiv_table: DataFrame,ref_pattern: Series,) -> set[str]:  # fmt:skip
+    def __find_matching_columns(self, reference_pattern: Series,) -> set[str]:  # fmt:skip
         """
         Private method called in find_extensiv_reference_columns() to use to iterate over each [Reference] pattern.
 
         :param extensiv_table: Pandas DataFrame of individual customer table in Extensiv
-        :param ref_pattern: RegEx pattern of current [Reference] in iteration
+        :param reference_pattern: RegEx pattern of current [Reference] in iteration
         :const SAMPLE_SIZE: number of records to search through in Extensiv table to find a pattern match. Default is 25
         :return cols: a unique set of columns in the Extensiv table with a matching pattern to current [Reference]
 
@@ -170,26 +170,25 @@ class FindPatternMatches:
               can check more values in Extensiv columns.
         """
         SAMPLE_SIZE = 25
-        cols = set()
+        columns = set()
 
         # Iterate through each column in Extensiv table
-        for col in extensiv_table.columns:
+        for column in self.extensiv_table.columns:
 
             # Iterate through the first 25 values of each column
-            for value in extensiv_table[col][:SAMPLE_SIZE]:
+            for value in self.extensiv_table[column][:SAMPLE_SIZE]:
 
                 # If match of the current reference RegEx pattern, add to set
-                if fullmatch(ref_pattern, str(value)):
+                if fullmatch(reference_pattern, str(value)):
 
                     # Break after first match
-                    cols.add(col.strip())
+                    columns.add(column.strip())
                     break
 
-        if cols:
-            return cols
+        if columns:
+            return columns
 
-    def __find_extensiv_reference_columns(
-        self, extensiv_table: DataFrame, fedex_invoice: DataFrame) -> dict[str,set]:  # fmt: skip
+    def __find_extensiv_reference_columns(self) -> dict[str, set]:
         """
         Subfunction called in compare_references() that iterates through each [Reference] and calls find_matching_columns()
         for each reference.
@@ -203,10 +202,11 @@ class FindPatternMatches:
         match_dct = dict()
 
         # Iterate through Reference column in fedex_invoice
-        for i, v in enumerate(fedex_invoice["Reference"]):
+        for i, v in enumerate(self.fedex_invoice["Reference"]):
 
             # Call column matcher function on each value in reference column
-            cols = self.__find_matching_columns(extensiv_table, fedex_invoice["Pattern"][i])  # fmt: skip
+            pattern = self.fedex_invoice["Pattern"][i]
+            cols = self.__find_matching_columns(pattern)
 
             # Add match list to dictionary
             if cols is not None and not isna(v):
@@ -228,7 +228,7 @@ class FindPatternMatches:
         unique_references: set = set()
 
         self.fedex_invoice["Pattern"] = self.fedex_invoice["Reference"].apply(self.__reg_tokenizer)  # fmt:skip
-        reference_columns = self.__find_extensiv_reference_columns(self.extensiv_table, self.fedex_invoice)  # fmt:skip
+        reference_columns = self.__find_extensiv_reference_columns()
 
         # Iterate through references
         for reference, columns in reference_columns.items():
@@ -274,11 +274,11 @@ class FindPatternMatches:
 
         return match_lst
 
-    def __create_extensiv_receiver_info(self, extensiv_table: DataFrame) -> dict:
+    def __create_extensiv_receiver_info(self) -> dict:
         """Private method to create Extensiv receiver information dictionaries for comparison"""
 
         # Extract receiver information from Extensiv DataFrame and drop duplicates
-        extensiv_receiver_info = extensiv_table.drop_duplicates(
+        extensiv_receiver_info = self.extensiv_table.drop_duplicates(
             [
                 "ShipTo.CompanyName",
                 "ShipTo.Name",
@@ -295,11 +295,11 @@ class FindPatternMatches:
                 "Receiver Name": row["ShipTo.Name"],
             }
 
-    def __create_fedex_invoice_receiver_info(self, fedex_invoice: DataFrame) -> dict:
+    def __create_fedex_invoice_receiver_info(self) -> dict:
         """Private method to create FedEx Invoice receiver information dictionaries for comparison"""
 
         # Extract receiver information from FedEx Invoice DataFrame and drop duplicates
-        fedex_invoice_info = fedex_invoice.drop_duplicates(
+        fedex_invoice_info = self.fedex_invoice.drop_duplicates(
             ["Receiver Address", "Receiver Company", "Receiver Name"]
         )
 
@@ -328,8 +328,8 @@ class FindPatternMatches:
         FUZZY_SCORE = 70
         match_lst = []
 
-        self.__create_extensiv_receiver_info(self.extensiv_table)
-        self.__create_fedex_invoice_receiver_info(self.fedex_invoice)
+        self.__create_extensiv_receiver_info()
+        self.__create_fedex_invoice_receiver_info()
 
         # Iterate through FedEx invoice receiver info
         for i, fedex_receiver in self.fedex_invoice_receiver_dct.items():
