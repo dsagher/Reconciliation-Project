@@ -37,13 +37,15 @@
 
 import pattern_match as pm
 from processing import convert_floats2ints
-from file_io import get_input, output
+from file_io import FileIO
 
-import os
-import pandas as pd
+from os import getcwd
+from pandas import DataFrame
 from tqdm import tqdm
+from functools import partial
 
-def main(fedex_invoice: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict[str,pd.DataFrame] ) -> pd.DataFrame:  # fmt: skip
+#! Validate in init of PatternMatch()
+def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFrame] ) -> DataFrame:  # fmt: skip
     """
     main() function calls the preprocessing and pattern matching logic classes and methods.
 
@@ -65,11 +67,8 @@ def main(fedex_invoice: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict[str,
     print("Comparing FedEx Invoice to QBO")
 
     # Compare FedEx invoice to QBO
-    qbo_pattern_match = pm.PatternMatch()
-
-    qbo_found, qbo_not_found = qbo_pattern_match.compare_qbo(
-        qbo=qbo, fedex_invoice=fedex_invoice
-    )
+    qbo_pattern_match = pm.FindCustomerPO(qbo, fedex_invoice)
+    qbo_found, qbo_not_found = qbo_pattern_match.compare_qbo()
 
     print("Searching through Extensiv tables for reference and receiver info matches")
 
@@ -81,39 +80,33 @@ def main(fedex_invoice: pd.DataFrame, qbo: pd.DataFrame, customer_dct: dict[str,
     # Loop through Extensiv tables and find matches
     for customer, dataframe in tqdm(customer_dct.items(), smoothing=0.1):
 
-        customer_pattern_match = pm.PatternMatch(name=customer)
+        PartialFindPatternMatches = partial(
+            pm.FindPatternMatches, fedex_invoice=qbo_not_found
+        )
+        customer_pattern_match = PartialFindPatternMatches(customer, dataframe)
 
         # find_value_match() outputs list of dicts of matches in Extensiv Table
-        reference_matches.extend(
-            customer_pattern_match.compare_references(
-                extensiv_table=dataframe, fedex_invoice=qbo_not_found
-            )
-        )
+        reference_matches.extend(customer_pattern_match.compare_references())
 
         # Adds matches of receiver info list
-        receiver_matches.extend(
-            customer_pattern_match.compare_receiver_info(
-                extensiv_table=dataframe, fedex_invoice=qbo_not_found
-            )
-        )
+        receiver_matches.extend(customer_pattern_match.compare_receiver_info())
 
         print(customer_pattern_match)
 
     # Replaces Customer PO # with Customer Name if match is found
-    final_matches = pm.PatternMatch()
-
-    final_df = final_matches.make_final_df(
-        reference_matches, receiver_matches, qbo_not_found
-    )
+    # final_matches = pm.PatternMatch()
+    #! not sure if this is going to belong to a class or be outside like this.
+    final_df = pm.make_final_df(reference_matches, receiver_matches, qbo_not_found)
 
     return final_df, qbo_found
 
 
 if __name__ == "__main__":
 
-    fedex_invoice, qbo, customer_dct = get_input(
-        path=input("File Path (or press Enter for current directory): ") or os.getcwd()
+    io = FileIO()
+    fedex_invoice, qbo, customer_dct = io.get_input(
+        path=input("File Path (or press Enter for current directory): ") or getcwd()
     )
     final_df, qbo_found = main(fedex_invoice, qbo, customer_dct)
-    output(final_df, qbo_found)
+    io.output(final_df, qbo_found)
     print("All done")
