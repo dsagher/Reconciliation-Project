@@ -32,7 +32,6 @@ class TestIO(unittest.TestCase):
 
     def setUp(self):
 
-        self.io = FileIO()
         # Create temporary project folder
         self.temp_dir = TemporaryDirectory()
         self.temp_dir_name = self.temp_dir.name
@@ -72,14 +71,14 @@ class TestIO(unittest.TestCase):
     def test_file_exist(self):
 
         # Test IO when everything is present
-        self.io.get_input(self.temp_dir_name)
+        FileIO(self.temp_dir_name)
 
     def test_input_files_folder_exist(self):
 
         shutil.rmtree(self.input_files)
 
         with self.assertRaises(FileNotFoundError):
-            self.io.get_input(self.temp_dir_name)
+            FileIO(self.temp_dir_name)
 
     def test_invoice_non_exist(self):
 
@@ -87,35 +86,35 @@ class TestIO(unittest.TestCase):
         os.remove(self.invoice_data)
 
         with self.assertRaises(FileNotFoundError):
-            self.io.get_input(self.temp_dir_name)
+            FileIO(self.temp_dir_name)
 
     def test_qbo_non_exist(self):
 
         # Test IO when qbo is not present
         os.remove(self.qbo)
         with self.assertRaises(FileNotFoundError):
-            self.io.get_input(self.temp_dir_name)
+            FileIO(self.temp_dir_name)
 
     def test_customer_file_non_exist(self):
 
         # Test IO when no customer file is present
         os.remove(self.test_customer)
         with self.assertRaises(FileNotFoundError):
-            self.io.get_input(self.temp_dir_name)
+            FileIO(self.temp_dir_name)
 
     def test_customer_folder_non_exist(self):
 
         # Test IO when no customer folder is present
         shutil.rmtree(self.customers)
         with self.assertRaises(FileNotFoundError):
-            self.io.get_input(self.temp_dir_name)
+            FileIO(self.temp_dir_name)
 
     def test_input_files_non_exist(self):
 
         # Test IO when no input_files folder is present
         shutil.rmtree(self.input_files)
         with self.assertRaises(FileNotFoundError):
-            self.io.get_input(self.temp_dir_name)
+            FileIO(self.temp_dir_name)
 
     def test_customer_file_not_folder(self):
 
@@ -124,7 +123,7 @@ class TestIO(unittest.TestCase):
         customer_file = os.path.join(self.input_files, "customers")
         self.create_excel_file(customer_file, worksheet_name="customer_sheet")
         with self.assertRaises(FileNotFoundError):
-            self.io.get_input(self.temp_dir_name)
+            FileIO(self.temp_dir_name)
 
     def test_spelling_qbo_invoice_data(self):
 
@@ -138,7 +137,7 @@ class TestIO(unittest.TestCase):
         self.create_excel_file(self.invoice_data, worksheet_name="INvoIce DatA")
         self.create_excel_file(self.qbo, worksheet_name="qBo CustOmers")
 
-        self.io.get_input(self.temp_dir_name)
+        FileIO(self.temp_dir_name)
 
     def test_spelling_qbo_invoice_data_2(self):
 
@@ -149,7 +148,7 @@ class TestIO(unittest.TestCase):
             self.invoice_data, worksheet_name="Fedex Invoice Data.xlsx "
         )
 
-        self.io.get_input(self.temp_dir_name)
+        FileIO(self.temp_dir_name)
 
     def test_spelling_qbo(self):
 
@@ -158,7 +157,7 @@ class TestIO(unittest.TestCase):
         self.qbo = os.path.join(self.input_files, "Quickbooks.xlsx")
         self.create_excel_file(self.qbo, worksheet_name="Quickbooks")
 
-        self.io.get_input(self.temp_dir_name)
+        FileIO(self.temp_dir_name)
 
     def test_invoice_qbo_name_wrong(self):
 
@@ -172,7 +171,7 @@ class TestIO(unittest.TestCase):
         self.create_excel_file(self.invoice_data, worksheet_name="INvoise_dayta.xlsx")
 
         with self.assertRaises(FileNotFoundError):
-            self.io.get_input(self.temp_dir_name)
+            FileIO(self.temp_dir_name)
 
     def test_file_format_invoice_suffix(self):
 
@@ -181,7 +180,7 @@ class TestIO(unittest.TestCase):
         self.invoice_data = os.path.join(self.input_files, "invoice_data")
 
         with self.assertRaises(Exception):
-            self.io.get_input(self.temp_dir_name)
+            FileIO(self.temp_dir_name)
 
     def test_file_format_qbo_suffix(self):
 
@@ -190,20 +189,17 @@ class TestIO(unittest.TestCase):
         self.qbo = os.path.join(self.qbo, "qbo")
 
         with self.assertRaises(Exception):
-            self.io.get_input(self.temp_dir_name)
+            FileIO(self.temp_dir_name)
 
     def test_file_format_customer_suffix(self):
+        io = FileIO(self.temp_dir_name)
 
         os.remove(self.test_customer)
 
         self.test_customer = os.path.join(self.customers, "test_customer")
 
         with self.assertRaises(Exception):
-            self.io.get_input(self.temp_dir_name)
-
-    def test_output(self):
-        #! Work on output test
-        pass
+            io.get_input()
 
 
 if __name__ == "__main__":

@@ -35,7 +35,7 @@
 
 #=========================================================================================="""
 
-import pattern_match as pm
+from pattern_match import FindCustomerPO, FindPatternMatches, make_final_df
 from processing import convert_floats2ints
 from file_io import FileIO
 
@@ -44,7 +44,6 @@ from pandas import DataFrame
 from tqdm import tqdm
 from functools import partial
 
-#! Validate in init of PatternMatch()
 def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFrame] ) -> DataFrame:  # fmt: skip
     """
     main() function calls the preprocessing and pattern matching logic classes and methods.
@@ -67,7 +66,7 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
     print("Comparing FedEx Invoice to QBO")
 
     # Compare FedEx invoice to QBO
-    qbo_pattern_match = pm.FindCustomerPO(qbo, fedex_invoice)
+    qbo_pattern_match = FindCustomerPO(qbo, fedex_invoice)
     qbo_found, qbo_not_found = qbo_pattern_match.compare_qbo()
 
     print("Searching through Extensiv tables for reference and receiver info matches")
@@ -78,10 +77,10 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
     receiver_matches = list()
 
     # Loop through Extensiv tables and find matches
-    for customer, dataframe in tqdm(customer_dct.items(), smoothing=0.1):
+    for customer, dataframe in tqdm(customer_dct.items(), smoothing=0.5):
 
         PartialFindPatternMatches = partial(
-            pm.FindPatternMatches, fedex_invoice=qbo_not_found
+            FindPatternMatches, fedex_invoice=qbo_not_found
         )
         customer_pattern_match = PartialFindPatternMatches(customer, dataframe)
 
@@ -94,9 +93,7 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
         print(customer_pattern_match)
 
     # Replaces Customer PO # with Customer Name if match is found
-    # final_matches = pm.PatternMatch()
-    #! not sure if this is going to belong to a class or be outside like this.
-    final_df = pm.make_final_df(reference_matches, receiver_matches, qbo_not_found)
+    final_df = make_final_df(reference_matches, receiver_matches, qbo_not_found)
 
     return final_df, qbo_found
 
@@ -104,9 +101,10 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
 if __name__ == "__main__":
 
     io = FileIO()
+    path = input("File Path (or press Enter for current directory): ")
     fedex_invoice, qbo, customer_dct = io.get_input(
-        path=input("File Path (or press Enter for current directory): ") or getcwd()
-    )
+        path=path or getcwd()
+    )  # todo Move getcwd() to class
     final_df, qbo_found = main(fedex_invoice, qbo, customer_dct)
     io.output(final_df, qbo_found)
     print("All done")

@@ -23,20 +23,6 @@ from rapidfuzz import fuzz
 from dataclasses import dataclass, field
 
 
-# class PatternMatch:
-#     #! Might use this as parent class to inherit but might not be necessary.
-#     #! The final DF isnt being made from qbo_found
-#     """
-#     PatternMatch class handles the logic for comparing the FedEx invoice with Quickbooks
-#     and comparing [Reference] and [Receiver Name],[Receiver Company], and [Receiver Address] values
-#     in FedEx invoice to find matches in Extensiv.
-
-#     Special Concerns:
-#         - Class handles logic for several different purposes. Considering breaking up class
-#           into smaller subclasses to handle QBO <-> FedEx invoice, and FedEx invoice <-> Extensiv
-#     """
-
-
 @dataclass
 class FindCustomerPO:
 
@@ -44,10 +30,15 @@ class FindCustomerPO:
     fedex_invoice: DataFrame
 
     def __post_init__(self):
-        if not isinstance(self.qbo, DataFrame):
-            raise ValueError("Extensiv Table Must be Pandas DataFrame")
-        if not isinstance(self.fedex_invoice, DataFrame):
-            raise ValueError("Extensiv Table Must be Pandas DataFrame")
+
+        try:
+            if not (
+                isinstance(self.extensiv_table, DataFrame)
+                and isinstance(self.fedex_invoice, DataFrame)
+            ):
+                raise TypeError("Both tables must be DataFrames")
+        except TypeError as e:
+            print(f"Error {e}")
 
     def compare_qbo(self) -> DataFrame:  # fmt:skip
         """
@@ -59,15 +50,15 @@ class FindCustomerPO:
         :return qbo_not_found: Pandas DataFrame with records not in QBO
         """
 
+        # todo right_on and left_on could be passed in via arguments to modularize.
         # Merge qbo and fedex_invoice via Customer PO # and Display_Name via inner merge
-
         qbo_found = merge(
             self.qbo,
             self.fedex_invoice,
             right_on="Customer PO #",
             left_on="Display_Name",
             how="inner",
-            suffixes=["_qbo", "_fedex_invoice"],
+            suffixes=["_qbo", "_fedex_invoice"],  #! Probably Unnecessary
         )
 
         # Only include columns from fedex_invoice in merged dataset
@@ -103,7 +94,7 @@ class FindPatternMatches:
         try:
             if not (
                 isinstance(self.extensiv_table, DataFrame)
-                or isinstance(self.fedex_invoice, DataFrame)
+                and isinstance(self.fedex_invoice, DataFrame)
             ):
                 raise TypeError("Both tables must be DataFrames")
         except TypeError as e:
@@ -227,9 +218,12 @@ class FindPatternMatches:
         match_lst: list = list()
         unique_references: set = set()
 
+        # todo Add Second Pattern column for Reference 2.
         self.fedex_invoice["Pattern"] = self.fedex_invoice["Reference"].apply(self.__reg_tokenizer)  # fmt:skip
+        # todo Add reference_2_columns
         reference_columns = self.__find_extensiv_reference_columns()
 
+        # todo incorporate both references in this loop somehow
         # Iterate through references
         for reference, columns in reference_columns.items():
 
@@ -438,3 +432,7 @@ def make_final_df(
     final_df = fedex_invoice.drop(columns=["Pattern"])
 
     return final_df
+
+
+if __name__ == "__main__":
+    pass
