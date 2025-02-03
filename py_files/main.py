@@ -38,8 +38,6 @@
 from pattern_match import FindCustomerPO, FindPatternMatches, make_final_df
 from processing import convert_floats2ints
 from file_io import FileIO
-
-from os import getcwd
 from pandas import DataFrame
 from tqdm import tqdm
 from functools import partial
@@ -82,10 +80,13 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
         PartialFindPatternMatches = partial(
             FindPatternMatches, fedex_invoice=qbo_not_found
         )
+        # customer_pattern_match = FindPatternMatches(customer, dataframe, qbo_not_found)
         customer_pattern_match = PartialFindPatternMatches(customer, dataframe)
 
         # find_value_match() outputs list of dicts of matches in Extensiv Table
-        reference_matches.extend(customer_pattern_match.compare_references())
+        reference_matches.extend(customer_pattern_match.compare_references("Reference"))
+
+        reference_matches.extend(customer_pattern_match.compare_references("Reference 2"))  # fmt:skip
 
         # Adds matches of receiver info list
         receiver_matches.extend(customer_pattern_match.compare_receiver_info())
@@ -100,11 +101,9 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
 
 if __name__ == "__main__":
 
-    io = FileIO()
     path = input("File Path (or press Enter for current directory): ")
-    fedex_invoice, qbo, customer_dct = io.get_input(
-        path=path or getcwd()
-    )  # todo Move getcwd() to class
+    io = FileIO(path)
+    fedex_invoice, qbo, customer_dct = io.get_input()
     final_df, qbo_found = main(fedex_invoice, qbo, customer_dct)
     io.output(final_df, qbo_found)
     print("All done")

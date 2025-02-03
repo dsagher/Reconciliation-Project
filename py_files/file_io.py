@@ -26,7 +26,6 @@ from pandas import DataFrame, ExcelWriter, ExcelFile, read_csv, read_excel
 from tqdm import tqdm
 from typing import Tuple
 from datetime import datetime
-from dataclasses import dataclass
 
 
 def string_normalize(str: str) -> str:
@@ -41,12 +40,15 @@ def check_file_exists(lst: list, pattern: str) -> Tuple[bool, str]:
     return False, None
 
 
-@dataclass
+# @dataclass
 class FileIO:
 
-    path: str | None
+    # path: str | None
+    def __init__(self, path):
 
-    def __post_init__(self):
+        self.path: str | None = path
+        if not (isinstance(self.path, str) or isinstance(self.path, type(None))):
+            raise TypeError("Path must be String or NoneType")
 
         if self.path == None:
             self.path = os.getcwd()

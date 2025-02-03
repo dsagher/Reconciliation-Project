@@ -24,6 +24,7 @@ import os
 import shutil
 from xlsxwriter import Workbook
 from tempfile import TemporaryDirectory
+from pandas import DataFrame
 
 from file_io import FileIO
 
@@ -73,10 +74,21 @@ class TestIO(unittest.TestCase):
         # Test IO when everything is present
         FileIO(self.temp_dir_name)
 
+    def test_init_file_types(self):
+
+        with self.assertRaises(TypeError):
+            FileIO(123)
+
+    def test_init_file_types_2(self):
+
+        df = DataFrame
+        with self.assertRaises(TypeError):
+            FileIO(df)
+
     def test_input_files_folder_exist(self):
 
         shutil.rmtree(self.input_files)
-
+        print(type(self.temp_dir_name))
         with self.assertRaises(FileNotFoundError):
             FileIO(self.temp_dir_name)
 
