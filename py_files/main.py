@@ -27,11 +27,7 @@
         - file_io (for input and output handling)
 
     Special Concerns: 
-    - References are matched based on strict equalities, case insensitve.
-    This may result in missed values. Receiver matches are matched based on normalized strings.
-    - Fuzzy matching will be implemented to account for user input error (i.e. Main st vs. Main Street)
-    - Functionality will be added to search through [Reference 2]
-    - PatternMatch class will be broken up into smaller subclasses to avoid confusion.
+
 
 #=========================================================================================="""
 
@@ -70,7 +66,7 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
     print("Searching through Extensiv tables for reference and receiver info matches")
 
     # Compare FedEx invoice to Extensiv
-
+    REFERENCE_LST: list = ["Reference", "Reference 2"]
     reference_matches = list()
     receiver_matches = list()
 
@@ -84,9 +80,11 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
         customer_pattern_match = PartialFindPatternMatches(customer, dataframe)
 
         # find_value_match() outputs list of dicts of matches in Extensiv Table
-        reference_matches.extend(customer_pattern_match.compare_references("Reference"))
 
-        reference_matches.extend(customer_pattern_match.compare_references("Reference 2"))  # fmt:skip
+        for reference in REFERENCE_LST:
+            reference_matches.extend(
+                customer_pattern_match.compare_references(reference)
+            )
 
         # Adds matches of receiver info list
         receiver_matches.extend(customer_pattern_match.compare_receiver_info())
