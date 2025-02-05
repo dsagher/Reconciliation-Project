@@ -21,6 +21,7 @@
         - pandas
         - tqdm
         - os
+        - functools
     Internal:
         - pattern_match (for pattern matching logic)
         - processing (for data preprocessing)
@@ -37,6 +38,7 @@ from file_io import FileIO
 from pandas import DataFrame
 from tqdm import tqdm
 from functools import partial
+
 
 def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFrame] ) -> DataFrame:  # fmt: skip
     """
@@ -60,13 +62,16 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
     print("Comparing FedEx Invoice to QBO")
 
     # Compare FedEx invoice to QBO
+    FEDEX_KEY: str = "Customer PO #"
+    REFERENCE_LST: list = ["Reference", "Reference 2"]
+    QBO_KEY_LST: list = ["Fully_Qualified_Name", "Display_Name"]
+
     qbo_pattern_match = FindCustomerPO(qbo, fedex_invoice)
-    qbo_found, qbo_not_found = qbo_pattern_match.compare_qbo()
+    qbo_found, qbo_not_found = qbo_pattern_match.compare_qbo(QBO_KEY_LST, FEDEX_KEY)
 
     print("Searching through Extensiv tables for reference and receiver info matches")
 
     # Compare FedEx invoice to Extensiv
-    REFERENCE_LST: list = ["Reference", "Reference 2"]
     reference_matches = list()
     receiver_matches = list()
 
@@ -76,10 +81,8 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
         PartialFindPatternMatches = partial(
             FindPatternMatches, fedex_invoice=qbo_not_found
         )
-        # customer_pattern_match = FindPatternMatches(customer, dataframe, qbo_not_found)
-        customer_pattern_match = PartialFindPatternMatches(customer, dataframe)
 
-        # find_value_match() outputs list of dicts of matches in Extensiv Table
+        customer_pattern_match = PartialFindPatternMatches(customer, dataframe)
 
         for reference in REFERENCE_LST:
             reference_matches.extend(

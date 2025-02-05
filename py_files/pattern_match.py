@@ -19,7 +19,7 @@
 =========================================================================================="""
 
 from re import Pattern, sub, compile, fullmatch
-from pandas import DataFrame, Series, merge, isna
+from pandas import DataFrame, Series, merge, isna, concat
 from rapidfuzz import fuzz
 from typing import NoReturn
 
@@ -31,6 +31,7 @@ class FindCustomerPO:
         self.qbo: DataFrame = qbo
         self.fedex_invoice: DataFrame = fedex_invoice
 
+        # Raise error if inputs to class are not DataFrames
         try:
             if not (
                 isinstance(self.qbo, DataFrame)
@@ -40,39 +41,47 @@ class FindCustomerPO:
         except TypeError as e:
             print(f"Error {e}")
 
-    def compare_qbo(self) -> DataFrame:  # fmt:skip
+    def compare_qbo(
+        self, qbo_key_lst: list, fedex_key: str = "Customer PO #"
+    ) -> DataFrame:
         """
         compare_qbo() Compares FedEx invoice with QuickBooks via keys [Customer PO #] and [Display_Name], respectively.
 
-        :param qbo: Pandas Dataframe of original QuickBooks data
-        :param fedex_invoice: Pandas Dataframe of FedEx invoice data
+        :param qbo_key_lst: List of keys in QBO dataset to search for matches
+        :param fedex_invoice: Fedex key to look for in QBO. Default is "Customer PO #"
         :return qbo_found: Pandas DataFrame with records found in QBO
-        :return qbo_not_found: Pandas DataFrame with records not in QBO
+        :return qbo_not_found: Pandas DataFrame with records not found in QBO
         """
+        # Merge qbo and fedex_invoice DataFrames based on list of QBO keys and one FedEx key (Customer PO #)
+        qbo_found: DataFrame = DataFrame()
 
-        # todo right_on and left_on could be passed in via arguments to modularize.
-        # Merge qbo and fedex_invoice via Customer PO # and Display_Name via inner merge
-        qbo_found: DataFrame = merge(
-            self.qbo,
-            self.fedex_invoice,
-            right_on="Customer PO #",
-            left_on="Display_Name",
-            how="inner",
-        )
+        for qbo_key in qbo_key_lst:
+            merged_df: DataFrame = merge(
+                self.qbo,
+                self.fedex_invoice,
+                left_on=qbo_key,
+                right_on=fedex_key,
+                how="inner",
+            )
+
+            qbo_found = concat(
+                [qbo_found, merged_df], ignore_index=True
+            ).drop_duplicates(ignore_index=True)
 
         # Only include columns from fedex_invoice in merged dataset
         fedex_columns: list = list(self.fedex_invoice.columns)
-        qbo_found: DataFrame = qbo_found[fedex_columns]
+        qbo_found = qbo_found[fedex_columns]
 
         # Create sets of found and not found references
         self.found_references_unique: set = set(qbo_found["Customer PO #"].unique())
         self.all_references_unique: set = set(self.fedex_invoice["Customer PO #"])
         self.unmatched_references: set = (self.all_references_unique - self.found_references_unique)  # fmt: skip
 
-        # Create new DataFrame, add Customer PO #'s, and merge with fedex_invoice on left merge
+        # Create new DataFrame with only unique unmatched_references
         qbo_not_found: DataFrame = DataFrame(list(self.unmatched_references), columns=["Customer PO #"])  # fmt:skip
 
-        # Merge with invoice data
+        #! This maybe should be an inner merge
+        # Merge with fedex invoice
         qbo_not_found: DataFrame = qbo_not_found.merge(
             self.fedex_invoice,
             on="Customer PO #",
@@ -90,14 +99,11 @@ class FindPatternMatches:
         self.extensiv_table: DataFrame = extensiv_table
         self.fedex_invoice: DataFrame = fedex_invoice
 
-        """For receiever information comparison"""
-        self.extensiv_receiver_dct: dict = dict()
-        self.fedex_invoice_receiver_dct: dict = dict()
-
-        """For output of stats during runtime"""
+        # For output of stats during runtime
         self.receiver_matches: list = list()
         self.reference_matches: list = list()
 
+        # Raise error if datasets inputted during class instantiation are not DataFrames
         try:
             if not (
                 isinstance(self.extensiv_table, DataFrame)
@@ -107,6 +113,7 @@ class FindPatternMatches:
         except TypeError as e:
             print(f"Error {e}")
 
+    # Called during comparisons for output of stats during runtime
     def append_match(
         self, reference_match: str = None, receiver_match: str = None
     ) -> NoReturn:
@@ -117,6 +124,7 @@ class FindPatternMatches:
         if reference_match is not None:
             self.reference_matches.append(reference_match)
 
+    # Printing of stats during runtime
     def __str__(self):
 
         return (
@@ -135,7 +143,7 @@ class FindPatternMatches:
         )
 
     def __reg_tokenizer(self, value: str) -> Pattern:
-        """Called during compare_qbo() to create [Pattern] column in FedEx invoice"""
+        """Called during compare_qbo() to create [Pattern] column in FedEx Invoice"""
 
         # Add pattern tokens to FedEx invoice table in a new column called "Reference"
         with_letters: str = sub(r"[a-zA-Z]+", r"\\w+", str(value))
@@ -148,12 +156,11 @@ class FindPatternMatches:
 
     def __find_matching_columns(self, reference_pattern: Series,) -> set[str]:  # fmt:skip
         """
-        Private method called in find_extensiv_reference_columns() to use to iterate over each [Reference] pattern.
+        Private method called in __find_extensiv_reference_columns() to use to iterate over each [Reference] pattern.
 
-        :param extensiv_table: Pandas DataFrame of individual customer table in Extensiv
         :param reference_pattern: RegEx pattern of current [Reference] in iteration
         :const SAMPLE_SIZE: number of records to search through in Extensiv table to find a pattern match. Default is 25
-        :return cols: a unique set of columns in the Extensiv table with a matching pattern to current [Reference]
+        :return columns: a unique set of columns in the Extensiv table with a matching pattern to current [Reference]
 
         Special Concerns:
             - Search loop breaks when *one* match is found in each Extensiv column, and only searches
@@ -185,11 +192,10 @@ class FindPatternMatches:
         self, reference_column_name
     ) -> dict[str, set]:
         """
-        Subfunction called in compare_references() that iterates through each [Reference] and calls find_matching_columns()
+        Subfunction called in compare_references() that iterates through each [Reference] and calls __find_matching_columns()
         for each reference.
 
-        :param extensiv_table: Pandas DataFrame of individual customer table in Extensiv
-        :param fedex_invoice: Pandas DataFrame of FedEx invoice without values found in QBO
+        :param reference_column_name: Column in FedEx Invoice to be compared against values in Extensiv
         :return match_dct: Dictionary of dictionaries. Outer dictionary key are References, values
          are sets of columns with matching RegEx patterns.
         """
@@ -212,13 +218,14 @@ class FindPatternMatches:
 
     def compare_references(self, reference_column_name: str) -> list[dict[str, str]]:  # fmt:skip
         """
-        Function called in main.py that compares each reference value in the FedEx invoice (by exact match and fuzzy match)
-        with every value in the selected columns (matched by RegEx) until a match is found.
+        Function called in main.py that compares each value of a column (specified in main.py)
+        in the FedEx invoice (by exact match and fuzzy match) with every value in the selected columns
+        (matched by RegEx) until a match is found.
 
-        :param extensiv_table: Pandas DataFrame of individual customer table in Extensiv
-        :param fedex_invoice: Pandas DataFrame of FedEx invoice data not found in QBO
+        :param reference_column_name: Column in FedEx Invoice to be compared against values in Extensiv
         :return match_lst: list of dictionaries containing the [Reference], [Column], and [Customer] of matched reference
         """
+
         FUZZY_SCORE: int = 75
         match_lst: list = list()
         unique_references: set = set()
@@ -273,6 +280,7 @@ class FindPatternMatches:
                         unique_references.add(reference)
                         self.append_match(reference_match=reference)
 
+        # Drop [Pattern] column
         self.fedex_invoice = self.fedex_invoice.drop(
             columns=[self.reference_pattern_column]
         )
@@ -326,8 +334,6 @@ class FindPatternMatches:
         Compares the receiver information ([Receiver Address], [Receiver Name], [Receiver Company]) using fuzzy matching,
         of the Extensiv DataFrame to that of the FedEx Invoice DataFrame.
 
-        :param extensiv_table: Pandas DataFrame of individual customer table in Extensiv
-        :param fedex_invoice: Pandas DataFrame of FedEx invoice data not found in QBO
         :return match_lst: List of Dictionaries containing receiver information and customer name of matched values
 
         Notes:
@@ -396,6 +402,9 @@ def make_final_df(
     :param receiver_matches: List of dictionaries of receiver information found in Extensiv table with respective customer name
     :param fedex_invoice: DataFrame with records whose [Customer PO #] was not found in Quickbooks
     :return final_df: DataFrame with [Customer PO #]'s replaced with customer name if match found in Extensiv table
+
+    Notes:
+        - Not a part of any class. Gets called in main.py after all comparisons have been made.
     """
     final_df: DataFrame = fedex_invoice
 

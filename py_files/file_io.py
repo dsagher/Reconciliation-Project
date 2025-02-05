@@ -14,7 +14,6 @@
             - tqdm
             - typing
             - datetime
-            - dataclasses
         Internal:
             - None
 
@@ -24,7 +23,7 @@ import os
 from re import search, IGNORECASE
 from pandas import DataFrame, ExcelWriter, ExcelFile, read_csv, read_excel
 from tqdm import tqdm
-from typing import Tuple, Optional
+from typing import Tuple, Optional, NoReturn
 from datetime import datetime
 
 
@@ -32,7 +31,9 @@ def string_normalize(str: str) -> str:
     return str.lower().strip().replace(" ", "_")
 
 
-def check_file_exists(lst: list, pattern: str) -> Tuple[bool, str]:
+def check_file_exists(
+    lst: list, pattern: str
+) -> Optional[Tuple[bool, str] | Tuple[bool, None]]:
 
     for file in lst:
         if search(pattern, string_normalize(file), flags=IGNORECASE):
@@ -44,13 +45,15 @@ class FileIO:
 
     def __init__(self, path):
 
-        self.path: str | None = path if path else os.getcwd()
+        if not (isinstance(path, str)):
+            raise TypeError("Path must be String")
 
-        if not (isinstance(self.path, str) or isinstance(self.path, type(None))):
-            raise TypeError("Path must be String or NoneType")
+        self.current_directory: str = os.path.normpath(os.path.normcase(os.getcwd()))
 
-        # Define root path
-        self.original_path: str = os.path.normpath(self.path)
+        # If user doesn't enter a path, current directory will be returned
+        self.original_path: str = path if path != "" else self.current_directory
+
+        # Call error checks
         self._validate_root_path()
         self._setup_input_files_path()
         self._validate_input_files_path()
@@ -63,28 +66,29 @@ class FileIO:
         self._setup_qbo_path()
         self._validate_qbo_path()
 
-    def _validate_root_path(self) -> None:
+    def _validate_root_path(self) -> NoReturn:
         # Raise error if original path does not exist
         if not os.path.exists(self.original_path):
             raise FileNotFoundError("Original path not found")
+
         self.all_files_in_root: list = os.listdir(self.original_path)
 
-    def _setup_input_files_path(self) -> None:
+    def _setup_input_files_path(self) -> NoReturn:
 
         self.input_files_exists: bool
-        self.input_files_folder: Optional[bool | str]
+        self.input_files_folder: Optional[None | str]
 
         # Define input_files folder -> root/input_files/
         self.input_files_path: str = os.path.normpath(
-            os.path.join(self.path, "input_files")
+            os.path.join(self.original_path, "input_files")
         )
 
-        # Raise error if input_files folder does not exist -> root/input_files/
+        # Check if file matches RegEx
         self.input_files_exists, self.input_files_folder = check_file_exists(
             self.all_files_in_root, r"input(?:_+files)?"
         )
 
-    def _validate_input_files_path(self) -> None:
+    def _validate_input_files_path(self) -> NoReturn:
 
         if not self.input_files_exists:
             raise FileNotFoundError(
@@ -93,7 +97,7 @@ class FileIO:
             )
         self.input_files_lst: str = os.listdir(self.input_files_path)
 
-    def _setup_customer_path(self) -> None:
+    def _setup_customer_path(self) -> NoReturn:
 
         self.customer_folder_exists: bool
 
@@ -101,80 +105,87 @@ class FileIO:
         self.customer_path: str = os.path.normpath(
             os.path.join(self.input_files_path, "customers")
         )
+
+        # Check if file matches RegEx
         self.customer_folder_exists = check_file_exists(
             self.input_files_lst, r"customers?"
         )
 
-    def _validate_customer_path(self) -> None:
+    def _validate_customer_path(self) -> NoReturn:
 
+        # Raise error if customer folder does not exists or is not a directory
         if not self.customer_folder_exists:
             raise FileNotFoundError("Please create a customer folder.")
-        # Raise error if customer folder does not exists or is not a directory
         if not os.path.isdir(self.customer_path):
             raise FileNotFoundError("Please create a customer folder.")
 
+        # Create list of customers
         self.customer_lst: str = os.listdir(self.customer_path)
 
         # Raise error if customer folder is empty
         if not len(self.customer_lst) > 0:
             raise FileNotFoundError("Customer folder must not be empty.")
 
-    def _setup_invoice_data_path(self) -> None:
+    def _setup_invoice_data_path(self) -> NoReturn:
 
         self.invoice_data_exists: bool
-        self.invoice_data_file: Optional[bool | str]
+        self.invoice_data_file: Optional[None | str]
 
-        # Raise error if invoice_data does not exist -> root/input_files/invoice_data
+        # Check if file matches RegEx -> root/input_files/invoice_data
         self.invoice_data_exists, self.invoice_data_file = check_file_exists(
             self.input_files_lst, r"(fedex[_\-\s]*)?invoice[_\-\s]*(?:_+data)?"
         )
 
-    def _validate_invoice_data_path(self) -> None:
+    def _validate_invoice_data_path(self) -> NoReturn:
 
+        # Raise error if fedex invoice file does not exist
         if not self.invoice_data_exists:
             raise FileNotFoundError(
                 "Invoice Data not found.\
-                                    Expected a file like 'invoice_data.xlsx' or \n\
-                                    'fedex_invoice.xlsx' in 'input_files/' folder."
+                Expected a file like 'invoice_data.xlsx' or \n\
+                'fedex_invoice.xlsx' in 'input_files/' folder."
             )
 
+        # Create invoice data path
         self.invoice_data_path: str = os.path.join(
             self.input_files_path, self.invoice_data_file
         )
 
-    def _setup_sheets(self) -> None:
+    def _setup_sheets(self) -> NoReturn:
 
         self.invoice_sheet_exists: bool
-        self.correct_sheet: Optional[bool | str]
+        self.correct_sheet: Optional[None | str]
 
         # Get sheets object and name
         self.inv_sheets: ExcelFile = ExcelFile(self.invoice_data_path)
         self.inv_sheet_names: list = self.inv_sheets.sheet_names
 
-        # Check if file exists and input correct sheet and output correct sheet name
+        # Check if sheets match RegEx and output correct sheet name
         self.invoice_sheet_exists, self.correct_sheet = check_file_exists(
             self.inv_sheet_names, r"(fedex[_\-\s]*)?invoice[_\-\s]*(data)?"
         )
 
-    def _validate_sheets(self) -> None:
+    def _validate_sheets(self) -> NoReturn:
 
+        # Raise error if none of the correct Excel sheets exist
         if not self.invoice_sheet_exists:
             raise FileNotFoundError(
                 f"No valid sheet found in '{self.input_files_path} for Invoice Data",
             )
 
-    def _setup_qbo_path(self) -> None:
+    def _setup_qbo_path(self) -> NoReturn:
 
         self.qbo_exists: bool
-        self.qbo_file: Optional[bool | str]
+        self.qbo_file: Optional[None | str]
 
-        # Raise error if qbo does not exist -> root/input_files/qbo
+        # Check if file matches RegEx in root/input_files/qbo or quickbooks
         self.qbo_exists, self.qbo_file = check_file_exists(
             self.input_files_lst, r"(qbo|quickbooks)"
         )
 
-    def _validate_qbo_path(self) -> None:
+    def _validate_qbo_path(self) -> NoReturn:
 
+        # Raise error if qbo file does not exist
         if not self.qbo_exists:
             raise FileNotFoundError(
                 "QBO not found. Expected a file like 'qbo' in 'input_files/' folder"
@@ -190,13 +201,14 @@ class FileIO:
             self.current_path: str = os.path.join(self.input_files_path, i)
 
             if i == self.invoice_data_file:
-                # Read Files
+
+                # Read files
                 if i.endswith(".xlsx"):
-                    self.invoice_data = read_excel(
+                    invoice_data = read_excel(
                         self.current_path, sheet_name=self.correct_sheet
                     )
-                elif i.endswith("csv"):
-                    self.invoice_data = read_csv(
+                elif i.endswith(".csv"):
+                    invoice_data = read_csv(
                         self.current_path, sheet_name=self.correct_sheet
                     )
                 else:
@@ -205,17 +217,16 @@ class FileIO:
             # Load qbo
             elif i == self.qbo_file:
 
-                # Read Files
+                # Read files
                 if i.endswith(".xlsx"):
-                    self.qbo = read_excel(self.current_path)
-                elif i.endswith("csv"):
-                    self.qbo = read_csv(self.current_path)
+                    qbo = read_excel(self.current_path)
+                elif i.endswith(".csv"):
+                    qbo = read_csv(self.current_path)
                 else:
                     raise Exception("QBO File must end in .csv or .xlsx")
 
-        # Check if customer folder exists
+        customer_dct: dict = {}
 
-        self.customer_dct: dict = {}
         # Iterate through each customer in customer directory
         for customer in self.customer_lst:
 
@@ -223,34 +234,34 @@ class FileIO:
             if customer.endswith(".xlsx"):
                 customer_name = customer.removesuffix(".xlsx")
                 current_customer_path = f"{os.path.join(self.customer_path, customer)}"
-                self.customer_dct[customer_name] = read_excel(current_customer_path)
+                customer_dct[customer_name] = read_excel(current_customer_path)
 
             elif customer.endswith(".csv"):
                 customer_name = customer.removesuffix(".csv")
                 current_customer_path = f"{os.path.join(self.customer_path, customer)}"
-                self.customer_dct[customer_name] = read_csv(current_customer_path)
+                customer_dct[customer_name] = read_csv(current_customer_path)
             else:
                 raise Exception("Customer files must end in '.csv' or '.xlsx'")
 
-        return self.invoice_data, self.qbo, self.customer_dct
+        return invoice_data, qbo, customer_dct
 
-    def output(self, final_df: DataFrame, qbo_found: DataFrame) -> None:
+    def output(self, final_df: DataFrame, qbo_found: DataFrame) -> NoReturn:
 
         print("Writing Excel")
 
         # Create output_files/ path -> root/output_files/
-        self.output_dir: str = os.path.join(self.original_path, "output_files")
+        output_dir: str = os.path.join(self.original_path, "output_files")
 
         # Create output_files folder if doesn't exist
-        os.makedirs(self.output_dir, exist_ok=True)
+        os.makedirs(output_dir, exist_ok=True)
 
-        # Create output file path
+        # Create output file path with current date and time
         target_path: str = os.path.join(
-            self.output_dir,
-            f"final_df_{datetime.now().strftime('%Y-%m-%d_%H:%M')}",
+            output_dir,
+            f"final_df_{datetime.now().strftime('%Y.%m.%d_%H-%M-%S')}",
         )
 
-        # Create Excel file -> root/output_files/excel.xlsx
+        # Create Excel file -> root/output_files/filename.xlsx
         with ExcelWriter(f"{target_path}.xlsx") as writer:
 
             final_df.to_excel(writer, sheet_name="final_df")
@@ -262,4 +273,3 @@ if __name__ == "__main__":
     io = FileIO(path)
     fedex_invoice, qbo, customer_dct = io.get_input()
     io.output(qbo, fedex_invoice)
-    print(fedex_invoice, qbo, customer_dct)

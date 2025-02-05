@@ -12,6 +12,8 @@
             - tempfile
             - shutil
             - xlsxwriter
+            - os
+            - pandas
         Internal:
             - file_io
 
@@ -25,6 +27,7 @@ import shutil
 from xlsxwriter import Workbook
 from tempfile import TemporaryDirectory
 from pandas import DataFrame
+
 
 from file_io import FileIO
 
