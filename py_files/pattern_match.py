@@ -216,44 +216,62 @@ class FindPatternMatches:
 
         return match_dct
 
-    def compare_references(self, reference_column_name: str) -> list[dict[str, str]]:  # fmt:skip
+    def compare_references(self, reference_column_lst: list) -> list[dict[str, str]]:  # fmt:skip
         """
         Function called in main.py that compares each value of a column (specified in main.py)
         in the FedEx invoice (by exact match and fuzzy match) with every value in the selected columns
         (matched by RegEx) until a match is found.
 
-        :param reference_column_name: Column in FedEx Invoice to be compared against values in Extensiv
+        :param reference_column_lst: List of columns in FedEx Invoice to be compared against values in Extensiv
         :return match_lst: list of dictionaries containing the [Reference], [Column], and [Customer] of matched reference
         """
 
         FUZZY_SCORE: int = 75
-        match_lst: list = list()
-        unique_references: set = set()
 
-        self.reference_pattern_column: str = reference_column_name + "_Pattern"
-        self.fedex_invoice[self.reference_pattern_column] = self.fedex_invoice[
-                                reference_column_name].apply(self.__reg_tokenizer)  # fmt:skip
+        # Iterate through each reference column in argument list
+        for reference in reference_column_lst:
 
-        reference_columns: dict = self.__find_extensiv_reference_columns(
-            reference_column_name
-        )
+            match_lst: list = list()
+            unique_references: set = set()
 
-        # Iterate through references
-        for reference, columns in reference_columns.items():
+            self.reference_pattern_column: str = reference + "_Pattern"
+            self.fedex_invoice[self.reference_pattern_column] = self.fedex_invoice[
+                                    reference].apply(self.__reg_tokenizer)  # fmt:skip
 
-            # Iterate through each column in Extensiv table
-            for col in self.extensiv_table[list(columns)]:
+            reference_columns: dict = self.__find_extensiv_reference_columns(reference)
 
-                # Iterate through each value in column
-                for val in self.extensiv_table[col]:
+            # Iterate through references
+            for reference, columns in reference_columns.items():
 
-                    val_str = str(val).lower().strip()
-                    ref_str = str(reference).lower().strip()
+                # Iterate through each column in Extensiv table
+                for col in self.extensiv_table[list(columns)]:
 
-                    # Exact match check
-                    if val_str == ref_str:
+                    # Iterate through each value in column
+                    for val in self.extensiv_table[col]:
 
-                        if reference not in unique_references:
+                        val_str = str(val).lower().strip()
+                        ref_str = str(reference).lower().strip()
+
+                        # Exact match check
+                        if val_str == ref_str:
+
+                            if reference not in unique_references:
+                                match_lst.append(
+                                    {
+                                        "Reference": reference,
+                                        "Column": col,
+                                        "Customer": self.name,
+                                    }
+                                )
+                                unique_references.add(reference)
+                                self.append_match(reference_match=reference)
+
+                        # Fuzzy match check
+                        elif (
+                            fuzz.partial_ratio(ref_str, str(self.name).lower().strip())
+                            > FUZZY_SCORE
+                            and reference not in unique_references
+                        ):
                             match_lst.append(
                                 {
                                     "Reference": reference,
@@ -263,22 +281,6 @@ class FindPatternMatches:
                             )
                             unique_references.add(reference)
                             self.append_match(reference_match=reference)
-
-                    # Fuzzy match check
-                    elif (
-                        fuzz.partial_ratio(ref_str, str(self.name).lower().strip())
-                        > FUZZY_SCORE
-                        and reference not in unique_references
-                    ):
-                        match_lst.append(
-                            {
-                                "Reference": reference,
-                                "Column": col,
-                                "Customer": self.name,
-                            }
-                        )
-                        unique_references.add(reference)
-                        self.append_match(reference_match=reference)
 
         # Drop [Pattern] column
         self.fedex_invoice = self.fedex_invoice.drop(

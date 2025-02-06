@@ -57,14 +57,14 @@ class FileIO:
         self._validate_root_path()
         self._setup_input_files_path()
         self._validate_input_files_path()
-        self._setup_customer_path()
-        self._validate_customer_path()
         self._setup_invoice_data_path()
         self._validate_invoice_data_path()
-        self._setup_sheets()
-        self._validate_sheets()
         self._setup_qbo_path()
         self._validate_qbo_path()
+        self._setup_sheets()
+        self._validate_sheets()
+        self._setup_customer_path()
+        self._validate_customer_path()
 
     def _validate_root_path(self) -> NoReturn:
         # Raise error if original path does not exist
@@ -92,10 +92,76 @@ class FileIO:
 
         if not self.input_files_exists:
             raise FileNotFoundError(
-                "Input Files folder not found.\n\
-                Expected a folder like 'input_files/' in root folder."
+                "Input Files folder not found. Expected a folder like 'input_files/' in root folder."
             )
         self.input_files_lst: str = os.listdir(self.input_files_path)
+
+    def _setup_invoice_data_path(self) -> NoReturn:
+
+        self.invoice_data_exists: bool
+        self.invoice_data_file: Optional[None | str]
+
+        # Check if file matches RegEx -> root/input_files/invoice_data
+        self.invoice_data_exists, self.invoice_data_file = check_file_exists(
+            self.input_files_lst,
+            r"[(fedex)(invoice)][_\-\s]*[(fedex)(invoice)][_\-\s]*(?:_+data)?",
+        )
+
+    def _validate_invoice_data_path(self) -> NoReturn:
+
+        # Raise error if fedex invoice file does not exist
+        if not self.invoice_data_exists:
+            raise FileNotFoundError(
+                "Invoice Data not found.\
+                Expected a file like 'invoice_data.xlsx' or \
+                'fedex_invoice.xlsx' in 'input_files/' folder."
+            )
+
+        # Create invoice data path
+        self.invoice_data_path: str = os.path.join(
+            self.input_files_path, self.invoice_data_file
+        )
+
+    def _setup_sheets(self) -> NoReturn:
+
+        self.invoice_sheet_exists: bool
+        self.correct_sheet: Optional[None | str]
+
+        # Get sheets object and name
+        self.inv_sheets: ExcelFile = ExcelFile(self.invoice_data_path)
+        self.inv_sheet_names: list = self.inv_sheets.sheet_names
+
+        # Check if sheets match RegEx and output correct sheet name
+        self.invoice_sheet_exists, self.correct_sheet = check_file_exists(
+            self.inv_sheet_names,
+            r"[(fedex)(invoice)][_\-\s]*[(fedex)(invoice)][_\-\s]*(?:_+data)?",
+        )
+
+    def _validate_sheets(self) -> NoReturn:
+
+        # Raise error if none of the correct Excel sheets exist
+        if not self.invoice_sheet_exists:
+            raise FileNotFoundError(
+                f"No valid sheet found in '{self.input_files_path} for Invoice Data",
+            )
+
+    def _setup_qbo_path(self) -> NoReturn:
+
+        self.qbo_exists: bool
+        self.qbo_file: Optional[None | str]
+
+        # Check if file matches RegEx in root/input_files/qbo or quickbooks
+        self.qbo_exists, self.qbo_file = check_file_exists(
+            self.input_files_lst, r"(qbo|quickbooks)"
+        )
+
+    def _validate_qbo_path(self) -> NoReturn:
+
+        # Raise error if qbo file does not exist
+        if not self.qbo_exists:
+            raise FileNotFoundError(
+                "QBO not found. Expected a file like 'qbo' in 'input_files/' folder"
+            )
 
     def _setup_customer_path(self) -> NoReturn:
 
@@ -125,71 +191,6 @@ class FileIO:
         # Raise error if customer folder is empty
         if not len(self.customer_lst) > 0:
             raise FileNotFoundError("Customer folder must not be empty.")
-
-    def _setup_invoice_data_path(self) -> NoReturn:
-
-        self.invoice_data_exists: bool
-        self.invoice_data_file: Optional[None | str]
-
-        # Check if file matches RegEx -> root/input_files/invoice_data
-        self.invoice_data_exists, self.invoice_data_file = check_file_exists(
-            self.input_files_lst, r"(fedex[_\-\s]*)?invoice[_\-\s]*(?:_+data)?"
-        )
-
-    def _validate_invoice_data_path(self) -> NoReturn:
-
-        # Raise error if fedex invoice file does not exist
-        if not self.invoice_data_exists:
-            raise FileNotFoundError(
-                "Invoice Data not found.\
-                Expected a file like 'invoice_data.xlsx' or \n\
-                'fedex_invoice.xlsx' in 'input_files/' folder."
-            )
-
-        # Create invoice data path
-        self.invoice_data_path: str = os.path.join(
-            self.input_files_path, self.invoice_data_file
-        )
-
-    def _setup_sheets(self) -> NoReturn:
-
-        self.invoice_sheet_exists: bool
-        self.correct_sheet: Optional[None | str]
-
-        # Get sheets object and name
-        self.inv_sheets: ExcelFile = ExcelFile(self.invoice_data_path)
-        self.inv_sheet_names: list = self.inv_sheets.sheet_names
-
-        # Check if sheets match RegEx and output correct sheet name
-        self.invoice_sheet_exists, self.correct_sheet = check_file_exists(
-            self.inv_sheet_names, r"(fedex[_\-\s]*)?invoice[_\-\s]*(data)?"
-        )
-
-    def _validate_sheets(self) -> NoReturn:
-
-        # Raise error if none of the correct Excel sheets exist
-        if not self.invoice_sheet_exists:
-            raise FileNotFoundError(
-                f"No valid sheet found in '{self.input_files_path} for Invoice Data",
-            )
-
-    def _setup_qbo_path(self) -> NoReturn:
-
-        self.qbo_exists: bool
-        self.qbo_file: Optional[None | str]
-
-        # Check if file matches RegEx in root/input_files/qbo or quickbooks
-        self.qbo_exists, self.qbo_file = check_file_exists(
-            self.input_files_lst, r"(qbo|quickbooks)"
-        )
-
-    def _validate_qbo_path(self) -> NoReturn:
-
-        # Raise error if qbo file does not exist
-        if not self.qbo_exists:
-            raise FileNotFoundError(
-                "QBO not found. Expected a file like 'qbo' in 'input_files/' folder"
-            )
 
     def get_input(self) -> DataFrame:
 
