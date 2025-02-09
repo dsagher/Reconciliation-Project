@@ -14,11 +14,10 @@
             - xlsxwriter
             - os
             - pandas
+            - csv
         Internal:
             - file_io
 
-    Special Concerns:
-        - Not catching errors related to file existence of QBO and FedEx invoice. Will be addressed.
 =========================================================================================="""
 
 import unittest
@@ -27,14 +26,16 @@ import shutil
 from xlsxwriter import Workbook
 from tempfile import TemporaryDirectory
 from pandas import DataFrame
-
+import csv
 
 from file_io import FileIO
 
-"""=========================================================================================="""
+"""====================================== Setup  ========================================="""
+#! These are still named after invoice. Should be changed to FedEx invoice.
 
 
 class TestIO(unittest.TestCase):
+    """Needs docstring"""
 
     def setUp(self):
 
@@ -57,13 +58,23 @@ class TestIO(unittest.TestCase):
         self.qbo = os.path.join(self.input_files, "qbo.xlsx")
         self.test_customer = os.path.join(self.customers, "test_customer.xlsx")
 
-        # Create Excels
-        self.create_excel_file(self.invoice_data, worksheet_name="invoice_data")
-        self.create_excel_file(self.qbo, worksheet_name="qbo")
-        self.create_excel_file(self.test_customer, worksheet_name="test_customer")
+        # Create CSV paths
+        self.invoice_data_csv = os.path.join(self.input_files, "invoice_data.csv")
+        self.qbo_csv = os.path.join(self.input_files, "qbo.csv")
+        self.test_customer_csv = os.path.join(self.customers, "test_customer.csv")
 
     def tearDown(self):
         self.temp_dir.cleanup()
+
+    def create_csv_file(self, file_path):
+
+        csv_file = open(file_path, "w")
+        test_csv = csv.DictWriter(csv_file, fieldnames=["column1", "column2"])
+        test_csv.writeheader()
+        test_csv.writerow({"column1": 0, "column2": 0})
+        test_csv.writerow({"column1": 1, "column2": 1})
+        test_csv.writerow({"column1": 2, "column2": 2})
+        csv_file.close()
 
     def create_excel_file(self, file_path, worksheet_name):
 
@@ -74,188 +85,307 @@ class TestIO(unittest.TestCase):
         worksheet.write(1, 0, "More Sample Data")  # Add some data
         workbook.close()
 
-    """======================================= Test __init__ ==================================================="""
+    """================================= Test __init__ ====================================="""
 
-    def test_file_exist(self):
+    #! Rename these or Comment these to make it easier to reference filio.py
 
-        # Test IO when everything is present
-        FileIO(self.temp_dir_name)
-
-    def test_file_not_exist(self):
+    def test_root_non_exist(self):
 
         # Test IO when original path does not exist
         shutil.rmtree(self.temp_dir_name)
 
-        with self.assertRaises(FileNotFoundError, msg="Original path not found"):
+        with self.assertRaises(FileNotFoundError) as error:
             FileIO(self.temp_dir_name)
+
+        self.assertEqual(str(error.exception), "Original path not found")
 
     def test_init_file_types(self):
 
         # Test when file is instantiated with non-string
-        with self.assertRaises(TypeError, msg="Path must be String"):
+        with self.assertRaises(TypeError) as error:
             FileIO(123)
+
+        self.assertEqual(str(error.exception), "Path must be String")
 
     def test_init_file_types_2(self):
 
         # Test when file is instantiated with non-string
         df = DataFrame()
-        with self.assertRaises(TypeError, msg="Path must be String"):
+        with self.assertRaises(TypeError) as error:
             FileIO(df)
 
-    """========================================= Test Folder Existence ========================================="""
+        self.assertEqual(str(error.exception), "Path must be String")
+
+    # """=============================== Test Files Exist ============================="""
+    def test_excel_files_exist(self):
+
+        self.create_excel_file(self.invoice_data, worksheet_name="invoice_data")
+        self.create_excel_file(self.qbo, worksheet_name="qbo")
+        self.create_excel_file(self.test_customer, worksheet_name="test_customer")
+
+        # Test IO when everything is present
+        FileIO(self.temp_dir_name)
+
+    def test_csv_files_exist(self):
+
+        self.create_csv_file(self.invoice_data_csv)
+        self.create_csv_file(self.qbo_csv)
+        self.create_csv_file(self.test_customer_csv)
+
+        # Test IO when everything is present
+        FileIO(self.temp_dir_name)
 
     def test_input_files_folder_exist(self):
 
         # Test when input files folder does not exist
         shutil.rmtree(self.input_files)
 
-        with self.assertRaises(
-            FileNotFoundError,
-            msg="Input Files folder not found.\n\
-                Expected a folder like 'input_files/' in root folder.",
-        ):
+        with self.assertRaises(FileNotFoundError) as error:
             FileIO(self.temp_dir_name)
 
-    def test_invoice_non_exist(self):
+        self.assertEqual(
+            str(error.exception),
+            "Input Files folder not found. Expected a folder like 'input_files/' in root folder.",
+        )
+
+    def test_excel_invoice_non_exist(self):
+
+        self.create_excel_file(self.qbo, worksheet_name="qbo")
+        self.create_excel_file(self.test_customer, worksheet_name="test_customer")
 
         # Test IO when FedEx Invoice does not exist
-        os.remove(self.invoice_data)
-
-        with self.assertRaises(
-            FileNotFoundError,
-            msg="Invoice Data not found.\
-                Expected a file like 'invoice_data.xlsx' or \n\
-                'fedex_invoice.xlsx' in 'input_files/' folder.",
-        ):
+        with self.assertRaises(FileNotFoundError) as error:
             FileIO(self.temp_dir_name)
 
-    def test_qbo_non_exist(self):
+        self.assertEqual(
+            str(error.exception),
+            "Invoice Data not found.\
+                Expected a file like 'invoice_data' or \
+                'fedex_invoice' in 'input_files/' folder.",
+        )
+
+    def test_csv_invoice_non_exist(self):
+
+        self.create_csv_file(self.qbo_csv)
+        self.create_csv_file(self.test_customer_csv)
+
+        # Test IO when FedEx Invoice does not exist
+        with self.assertRaises(FileNotFoundError) as error:
+            FileIO(self.temp_dir_name)
+
+        self.assertEqual(
+            str(error.exception),
+            "Invoice Data not found.\
+                Expected a file like 'invoice_data' or \
+                'fedex_invoice' in 'input_files/' folder.",
+        )
+
+    def test_excel_qbo_non_exist(self):
 
         # Test IO when qbo does not exist
-        os.remove(self.qbo)
-        with self.assertRaises(
-            FileNotFoundError,
-            msg="QBO not found. Expected a file like 'qbo' in 'input_files/' folder",
-        ):
+        self.create_excel_file(self.invoice_data, worksheet_name="invoice_data")
+        self.create_excel_file(self.test_customer, worksheet_name="test_customer")
+
+        with self.assertRaises(FileNotFoundError) as error:
             FileIO(self.temp_dir_name)
+
+        self.assertEqual(
+            str(error.exception),
+            "QBO not found. Expected a file like 'qbo' in 'input_files/' folder",
+        )
+
+    def test_csv_qbo_non_exist(self):
+
+        # Test IO when qbo does not exist
+        self.create_csv_file(self.invoice_data_csv)
+        self.create_csv_file(self.test_customer_csv)
+
+        with self.assertRaises(FileNotFoundError) as error:
+            FileIO(self.temp_dir_name)
+
+        self.assertEqual(
+            str(error.exception),
+            "QBO not found. Expected a file like 'qbo' in 'input_files/' folder",
+        )
+
+    def test_excel_customer_file_non_exist(self):
+
+        shutil.rmtree(self.customers)
+
+        self.create_excel_file(self.invoice_data, worksheet_name="invoice_data")
+        self.create_excel_file(self.qbo, worksheet_name="qbo")
+        # Test IO when customer file does not exist
+
+        with self.assertRaises(FileNotFoundError) as error:
+            FileIO(self.temp_dir_name)
+
+        self.assertEqual(str(error.exception), "Please create a customer folder.")
 
     def test_customer_file_non_exist(self):
 
+        self.create_excel_file(self.invoice_data, worksheet_name="invoice_data")
+        self.create_excel_file(self.qbo, worksheet_name="qbo")
         # Test IO when customer file does not exist
-        os.remove(self.test_customer)
-        with self.assertRaises(FileNotFoundError):
+
+        with self.assertRaises(FileNotFoundError) as error:
             FileIO(self.temp_dir_name)
 
-    def test_customer_folder_non_exist(self):
-
-        # Test IO when customer folder does not exist
-        shutil.rmtree(self.customers)
-        with self.assertRaises(
-            FileNotFoundError, msg="Please create a customer folder."
-        ):
-            FileIO(self.temp_dir_name)
+        self.assertEqual(str(error.exception), "Customer folder must not be empty.")
 
     def test_customer_file_not_folder(self):
 
-        # Test IO when customer file exists but not customer directory
         shutil.rmtree(self.customers)
         customer_file = os.path.join(self.input_files, "customers")
+
+        self.create_excel_file(self.invoice_data, worksheet_name="invoice_data")
+        self.create_excel_file(self.qbo, worksheet_name="qbo")
         self.create_excel_file(customer_file, worksheet_name="customer_sheet")
-        with self.assertRaises(
-            FileNotFoundError, msg="Please create a customer folder."
-        ):
+
+        # Test IO when customer file exists but not customer directory
+        with self.assertRaises(NotADirectoryError) as error:
             FileIO(self.temp_dir_name)
 
-    """================================ Test RegEx ============================================="""
+        self.assertEqual(str(error.exception), "Customer path is not a directory")
+
+    # """================================ Test RegEx ========================================="""
 
     def test_spelling_invoice_data(self):
 
-        os.remove(self.invoice_data)
-
         self.invoice_data = os.path.join(self.input_files, "INvoIce DatA.xlsx")
+
         self.create_excel_file(self.invoice_data, worksheet_name="INvoIce DatA")
+        self.create_excel_file(self.qbo, worksheet_name="qbo")
+        self.create_excel_file(self.test_customer, worksheet_name="customer_sheet")
+
         FileIO(self.temp_dir_name)
 
     def test_spelling_invoice_data_2(self):
-
-        os.remove(self.invoice_data)
 
         self.invoice_data = os.path.join(self.input_files, "fedex_invoice_data.xlsx")
-        self.create_excel_file(self.invoice_data, worksheet_name="fedex_invoice")
+
+        self.create_excel_file(self.invoice_data, worksheet_name="fedex_invoice_data")
+        self.create_excel_file(self.qbo, worksheet_name="qbo")
+        self.create_excel_file(self.test_customer, worksheet_name="customer_sheet")
 
         FileIO(self.temp_dir_name)
 
-    def test_spelling_invoice_data_2(self):
-
-        os.remove(self.invoice_data)
+    def test_spelling_invoice_data_3(self):
 
         self.invoice_data = os.path.join(self.input_files, "fedex_data.xlsx")
-        self.create_excel_file(self.invoice_data, worksheet_name="fedex data")
 
-        FileIO(self.temp_dir_name)
-
-    def test_sheet_exists(self):
-        pass
-
-    def test_spelling_qbo(self):
-
-        os.remove(self.qbo)
-
-        self.qbo = os.path.join(self.input_files, "qBo CustOmers.xlsx")
-        self.create_excel_file(self.qbo, worksheet_name="qBo CustOmers")
-
-        FileIO(self.temp_dir_name)
-
-    def test_spelling_qbo(self):
-
-        os.remove(self.qbo)
-
-        self.qbo = os.path.join(self.input_files, "Quickbooks.xlsx")
-        self.create_excel_file(self.qbo, worksheet_name="Quickbooks")
+        self.create_excel_file(self.invoice_data, worksheet_name="fedex_data")
+        self.create_excel_file(self.qbo, worksheet_name="qbo")
+        self.create_excel_file(self.test_customer, worksheet_name="customer_sheet")
 
         FileIO(self.temp_dir_name)
 
     def test_invoice_qbo_name_wrong(self):
 
-        os.remove(self.invoice_data)
-        os.remove(self.qbo)
-
         self.invoice_data = os.path.join(self.input_files, "INvoise_dayta.xlsx")
-        self.qbo_wrong = os.path.join(self.input_files, "cookbooks.xlsx")
 
-        self.create_excel_file(self.qbo_wrong, worksheet_name="cookbooks.xlsx")
+        self.create_excel_file(self.qbo, worksheet_name="qbo")
+        self.create_excel_file(self.test_customer, worksheet_name="customer_sheet")
         self.create_excel_file(self.invoice_data, worksheet_name="INvoise_dayta.xlsx")
 
-        with self.assertRaises(FileNotFoundError):
+        with self.assertRaises(FileNotFoundError) as error:
             FileIO(self.temp_dir_name)
+
+        self.assertEqual(
+            str(error.exception),
+            "Invoice Data not found.\
+                Expected a file like 'invoice_data' or \
+                'fedex_invoice' in 'input_files/' folder.",
+        )
+
+    def test_spelling_qbo(self):
+
+        self.qbo = os.path.join(self.input_files, "qBo CustOmers.xlsx")
+
+        self.create_excel_file(self.qbo, worksheet_name="qBo CustOmers")
+        self.create_excel_file(self.test_customer, worksheet_name="customer_sheet")
+        self.create_excel_file(self.invoice_data, worksheet_name="invoice_data")
+
+        FileIO(self.temp_dir_name)
+
+    def test_spelling_qbo_2(self):
+
+        self.qbo = os.path.join(self.input_files, "Quickbooks.xlsx")
+
+        self.create_excel_file(self.qbo, worksheet_name="Quickbooks")
+        self.create_excel_file(self.invoice_data, worksheet_name="invoice_data")
+        self.create_excel_file(self.test_customer, worksheet_name="customer_sheet")
+
+        FileIO(self.temp_dir_name)
+
+    def test_invoice_qbo_name_wrong(self):
+
+        self.qbo = os.path.join(self.input_files, "cookbooks.xlsx")
+
+        self.create_excel_file(self.qbo, worksheet_name="cookbooks")
+        self.create_excel_file(self.invoice_data, worksheet_name="invoice_data")
+        self.create_excel_file(self.test_customer, worksheet_name="customer_sheet")
+
+        with self.assertRaises(FileNotFoundError) as error:
+            FileIO(self.temp_dir_name)
+
+        self.assertEqual(
+            str(error.exception),
+            "QBO not found. Expected a file like 'qbo' in 'input_files/' folder",
+        )
 
     def test_file_format_invoice_suffix(self):
 
-        os.remove(self.invoice_data)
+        self.invoice_data = os.path.join(self.input_files, "invoice_data.json")
+        self.qbo = os.path.join(self.input_files, "qbo.xlsx")
+        self.test_customer = os.path.join(self.customers, "test_customer.xlsx")
 
-        self.invoice_data = os.path.join(self.input_files, "invoice_data")
+        self.create_excel_file(self.invoice_data, worksheet_name="invoice_data")
+        self.create_excel_file(self.qbo, worksheet_name="qbo")
+        self.create_excel_file(self.test_customer, worksheet_name="customer_sheet")
 
-        with self.assertRaises(Exception):
-            FileIO(self.temp_dir_name)
+        io = FileIO(self.temp_dir_name)
+        with self.assertRaises(FileNotFoundError) as error:
+            io.get_input()
+
+        self.assertEqual(
+            str(error.exception), "Invoice Data File must end in .csv or .xlsx"
+        )
 
     def test_file_format_qbo_suffix(self):
 
-        os.remove(self.qbo)
+        self.invoice_data = os.path.join(self.input_files, "invoice_data.xlsx")
+        self.qbo = os.path.join(self.input_files, "qbo")
+        self.test_customer = os.path.join(self.customers, "test_customer.xlsx")
 
-        self.qbo = os.path.join(self.qbo, "qbo")
+        self.create_excel_file(self.invoice_data, worksheet_name="invoice_data")
+        self.create_excel_file(self.qbo, worksheet_name="qbo")
+        self.create_excel_file(self.test_customer, worksheet_name="customer_sheet")
 
-        with self.assertRaises(Exception):
-            FileIO(self.temp_dir_name)
+        io = FileIO(self.temp_dir_name)
+        with self.assertRaises(FileNotFoundError) as error:
+            io.get_input()
+
+        self.assertEqual(str(error.exception), "QBO File must end in .csv or .xlsx")
 
     def test_file_format_customer_suffix(self):
-        io = FileIO(self.temp_dir_name)
 
-        os.remove(self.test_customer)
-
+        self.invoice_data = os.path.join(self.input_files, "invoice_data.xlsx")
+        self.qbo = os.path.join(self.input_files, "qbo.xlsx")
         self.test_customer = os.path.join(self.customers, "test_customer")
 
-        with self.assertRaises(Exception):
+        self.create_excel_file(self.invoice_data, worksheet_name="invoice_data")
+        self.create_excel_file(self.qbo, worksheet_name="qbo")
+        self.create_excel_file(self.test_customer, worksheet_name="customer_sheet")
+
+        io = FileIO(self.temp_dir_name)
+        self.test_customer = os.path.join(self.customers, "test_customer")
+
+        with self.assertRaises(FileNotFoundError) as error:
             io.get_input()
+
+        self.assertEqual(
+            str(error.exception), "Customer files must end in '.csv' or '.xlsx'"
+        )
 
     """=========================================================================================="""
 

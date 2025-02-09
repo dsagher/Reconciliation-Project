@@ -56,6 +56,7 @@ class FindCustomerPO:
         qbo_found: DataFrame = DataFrame()
 
         for qbo_key in qbo_key_lst:
+
             merged_df: DataFrame = merge(
                 self.qbo,
                 self.fedex_invoice,
@@ -187,7 +188,6 @@ class FindPatternMatches:
         if columns:
             return columns
 
-    #! This might not need an argument
     def __find_extensiv_reference_columns(
         self, reference_column_name
     ) -> dict[str, set]:
@@ -227,18 +227,19 @@ class FindPatternMatches:
         """
 
         FUZZY_SCORE: int = 75
+        match_lst: list = list()
+        unique_references: set = set()
 
         # Iterate through each reference column in argument list
-        for reference in reference_column_lst:
+        for reference_column in reference_column_lst:
 
-            match_lst: list = list()
-            unique_references: set = set()
-
-            self.reference_pattern_column: str = reference + "_Pattern"
+            self.reference_pattern_column: str = reference_column + "_Pattern"
             self.fedex_invoice[self.reference_pattern_column] = self.fedex_invoice[
-                                    reference].apply(self.__reg_tokenizer)  # fmt:skip
+                                    reference_column].apply(self.__reg_tokenizer)  # fmt:skip
 
-            reference_columns: dict = self.__find_extensiv_reference_columns(reference)
+            reference_columns: dict = self.__find_extensiv_reference_columns(
+                reference_column
+            )
 
             # Iterate through references
             for reference, columns in reference_columns.items():
@@ -282,10 +283,10 @@ class FindPatternMatches:
                             unique_references.add(reference)
                             self.append_match(reference_match=reference)
 
-        # Drop [Pattern] column
-        self.fedex_invoice = self.fedex_invoice.drop(
-            columns=[self.reference_pattern_column]
-        )
+            # Drop [Pattern] column
+            self.fedex_invoice = self.fedex_invoice.drop(
+                columns=self.reference_pattern_column
+            )
 
         return match_lst
 

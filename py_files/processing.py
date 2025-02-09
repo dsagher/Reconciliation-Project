@@ -14,7 +14,7 @@
 
     Special Concerns:
         - May move string normalization from pattern_match.py to this file for clarity
-        and testing purposes.
+          and testing purposes.
 =========================================================================================="""
 
 import numpy as np

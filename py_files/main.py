@@ -75,7 +75,8 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
     reference_matches = list()
     receiver_matches = list()
 
-    # Loop through Extensiv tables and find matches
+    # Loop through Extensiv tables
+    #  and find matches
     for customer, dataframe in tqdm(customer_dct.items(), smoothing=0.5):
 
         PartialFindPatternMatches = partial(
@@ -84,7 +85,9 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
 
         customer_pattern_match = PartialFindPatternMatches(customer, dataframe)
 
-        customer_pattern_match.compare_references(REFERENCE_LST)
+        reference_matches.extend(
+            customer_pattern_match.compare_references(REFERENCE_LST)
+        )
 
         # Adds matches of receiver info list
         receiver_matches.extend(customer_pattern_match.compare_receiver_info())
