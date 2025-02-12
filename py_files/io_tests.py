@@ -116,7 +116,8 @@ class TestIO(unittest.TestCase):
 
         self.assertEqual(str(error.exception), "Path must be String")
 
-    # """=============================== Test Files Exist ============================="""
+    """=============================== Test Files Exist ============================="""
+
     def test_excel_files_exist(self):
 
         self.create_excel_file(self.invoice_data, worksheet_name="invoice_data")
@@ -247,7 +248,7 @@ class TestIO(unittest.TestCase):
 
         self.assertEqual(str(error.exception), "Customer path is not a directory")
 
-    # """================================ Test RegEx ========================================="""
+    """================================ Test RegEx ========================================="""
 
     def test_spelling_invoice_data(self):
 
