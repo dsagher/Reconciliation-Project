@@ -40,26 +40,21 @@ class TestIO(unittest.TestCase):
 
     def setUp(self):
 
-        # Create temporary project folder
         self.temp_dir = TemporaryDirectory()
         self.temp_dir_name = self.temp_dir.name
 
-        # Create inner folder paths
         self.input_files = os.path.join(self.temp_dir_name, "input_files")
         self.customers = os.path.join(self.input_files, "customers")
         self.output_files = os.path.join(self.temp_dir_name, "output_files")
 
-        # Create inner folders
         os.makedirs(self.input_files)
         os.makedirs(self.customers)
         os.makedirs(self.output_files)
 
-        # Create Excel paths
         self.fedex_invoice = os.path.join(self.input_files, "fedex_invoice.xlsx")
         self.qbo = os.path.join(self.input_files, "qbo.xlsx")
         self.test_customer = os.path.join(self.customers, "test_customer.xlsx")
 
-        # Create CSV paths
         self.fedex_invoice_csv = os.path.join(self.input_files, "fedex_invoice.csv")
         self.qbo_csv = os.path.join(self.input_files, "qbo.csv")
         self.test_customer_csv = os.path.join(self.customers, "test_customer.csv")
@@ -87,8 +82,6 @@ class TestIO(unittest.TestCase):
         workbook.close()
 
     """================================= Test __init__ ====================================="""
-
-    #! Rename these or Comment these to make it easier to reference filio.py
 
     def test_init_file_type(self):
 
