@@ -6,3 +6,4 @@ input_files/
 Whill.xlsx
 .DS_Store
 *.ipynb
+.mypy_cache

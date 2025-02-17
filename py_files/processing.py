@@ -1,39 +1,54 @@
 """==========================================================================================
-    
     File: processing.py
     Author: Dan Sagher
     Date: 12/25/24
     Description:
-        Contains the data preprocessing functions called in main.py.
+        Contains data preprocessing functions for converting floating point numbers to integers
+        when appropriate. Used to standardize numeric data types across different input sources.
 
     Dependencies:
         External:
             - numpy
+            - pandas
         Internal:
             - None
 
-    Special Concerns:
-        - May move string normalization from pattern_match.py to this file for clarity
-          and testing purposes.
+    Usage:
+        from processing import convert_floats2ints
+        
+        # Convert appropriate float columns to integers
+        processed_df = convert_floats2ints(input_df)
 =========================================================================================="""
 
 import numpy as np
+import pandas as pd
 
 
-def convert_floats2ints(df):
+def convert_floats2ints(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Converts float columns to integers where all non-null values are whole numbers.
 
-    floats_df = df.select_dtypes(include="float64")
+    :param: df: Input DataFrame containing columns to be processed
+    :return df: DataFrame with appropriate float columns converted to integers
+    """
+    df = df.copy()
 
-    # Find all whole numbers
-    all_whole_numbers = np.all(floats_df.dropna == floats_df.dropna().astype(int))
-    # Get columns of all whole numbers
-    convertible_cols = [
-        col
-        for col in floats_df.columns
-        if np.all(df[col].dropna() == all_whole_numbers)
-    ]
+    float_cols = df.select_dtypes(include="float64")
 
-    # Convert back to Invoice Data
-    floats_df[convertible_cols].fillna(0).astype(int)
+    if float_cols.empty:
+        return df
 
-    df[convertible_cols] = floats_df[convertible_cols]
+    convertible_cols = []
+    for col in float_cols.columns:
+        non_null_values = df[col].dropna()
+        if non_null_values.empty:
+            continue
+        if np.all(non_null_values == non_null_values.astype(int)):
+            convertible_cols.append(col)
+
+    if convertible_cols:
+        df[convertible_cols] = df[convertible_cols].apply(
+            lambda x: x.astype("Int64") if not x.isna().all() else x
+        )
+
+    return df

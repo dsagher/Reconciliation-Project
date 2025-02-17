@@ -5,48 +5,48 @@
     Author:      <Dan Sagher>
     Date:        <12/25/24>
     Description:
+        This tool reconciles invoice data from FedEx with QuickBooks Online (QBO) data and customer 
+        information stored in Extensiv tables. It simplifies the comparison and matching process to 
+        identify discrepancies and generate a consolidated output file.
 
-    <This tool reconciles missing or incorrect [Customer PO #] values from a FedEx invoice>
-
-    1. Values are first compared against Quickbooks to determine which Customer PO #'s 
-    are correct.
-    2. Remaining values are searched through columns of individual Extensiv tables 
-    via the FedEx invoice [Reference].
-    3. Remaining values are searched via Receiver information - [Receiver Name],
-    [Receiver Address],[Receiver Company].
-    4. Found values have their [Customer PO #] replaced with the name of the customer. 
+    Workflow:
+        1. Input: Accepts Excel or CSV files from a user-defined path.
+        2. QuickBooks Comparison: Compares invoice values against QBO to validate Customer PO #s.
+        3. Extensiv Lookup (Part 1): Searches for unmatched records in Extensiv using fields 
+           from the FedEx invoice (e.g., [Reference], [Reference 2]).
+        4. Extensiv Lookup (Part 2): If still unmatched, searches using receiver details 
+           from FedEx (e.g., [Receiver Name], [Receiver Address], [Receiver Company]).
+        5. Reconciliation: Updates the [Customer PO #] with the corresponding customer name.
+        6. Output: Exports a reconciled Excel file with the matched values.
 
     Dependencies:
-    External:
-        - pandas
-        - tqdm
-        - os
-        - functools
-    Internal:
-        - pattern_match (for pattern matching logic)
-        - processing (for data preprocessing)
-        - file_io (for input and output handling)
-
-    Special Concerns: 
-
+        External:
+            - pandas
+            - tqdm
+            - functools
+        Internal:
+            - pattern_match (for pattern matching logic)
+            - processing (for data preprocessing)
+            - file_io (for input and output handling)
 
 #=========================================================================================="""
 
-from pattern_match import FindCustomerPO, FindPatternMatches, make_final_df
-from processing import convert_floats2ints
-from file_io import FileIO
 from pandas import DataFrame
 from tqdm import tqdm
 from functools import partial
 
+from pattern_match import FindCustomerPO, FindPatternMatches, make_final_df
+from processing import convert_floats2ints
+from file_io import FileIO
 
 def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFrame] ) -> DataFrame:  # fmt: skip
     """
-    main() function calls the preprocessing and pattern matching logic classes and methods.
+    main() function calls the input, preprocessing, pattern matching, and output classes, methods, and functions.
 
     :param fedex_invoice: Pandas DataFrame of FedEx invoice
     :param qbo: Pandas DataFrame of Quickbooks customer information
     :param customer_dct: Dictionary containing {customer_name: Pandas DataFrame}
+
     :return final_df: New FedEx invoice DataFrame containing replaced [Customer PO #] with customer_name
     :return qbo_found: New FedEx invoice DataFrame containing only records with [Customer PO #] found in Quickbooks.
     """
@@ -76,7 +76,6 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
     receiver_matches = list()
 
     # Loop through Extensiv tables
-    #  and find matches
     for customer, dataframe in tqdm(customer_dct.items(), smoothing=0.5):
 
         PartialFindPatternMatches = partial(
@@ -89,12 +88,11 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
             customer_pattern_match.compare_references(REFERENCE_LST)
         )
 
-        # Adds matches of receiver info list
         receiver_matches.extend(customer_pattern_match.compare_receiver_info())
 
         print(customer_pattern_match)
 
-    # Replaces Customer PO # with Customer Name if match is found
+    # Replace Customer PO # with Customer Name if match is found
     final_df = make_final_df(reference_matches, receiver_matches, qbo_not_found)
 
     return final_df, qbo_found
