@@ -74,7 +74,6 @@ class TestIO(unittest.TestCase):
 
     def create_excel_file(self, file_path, worksheet_name):
 
-        # Create dummy Excel file
         workbook = Workbook(file_path)
         worksheet = workbook.add_worksheet(worksheet_name)
         worksheet.write(0, 0, "Sample Data")
