@@ -43,12 +43,14 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
     """
     main() function calls the input, preprocessing, pattern matching, and output classes, methods, and functions.
 
-    :param fedex_invoice: Pandas DataFrame of FedEx invoice
-    :param qbo: Pandas DataFrame of Quickbooks customer information
-    :param customer_dct: Dictionary containing {customer_name: Pandas DataFrame}
+    Parameters:
+        - fedex_invoice: Pandas DataFrame of FedEx invoice
+        - qbo: Pandas DataFrame of Quickbooks customer information
+        - customer_dct: Dictionary containing {customer_name: Pandas DataFrame}
 
-    :return final_df: New FedEx invoice DataFrame containing replaced [Customer PO #] with customer_name
-    :return qbo_found: New FedEx invoice DataFrame containing only records with [Customer PO #] found in Quickbooks.
+    Returns:
+        - final_df: New FedEx invoice DataFrame containing replaced [Customer PO #] with customer_name
+        - qbo_found: New FedEx invoice DataFrame containing only records with [Customer PO #] found in Quickbooks.
     """
 
     print("Pre-Processing")

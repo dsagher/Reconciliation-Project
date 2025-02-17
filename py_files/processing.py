@@ -28,8 +28,11 @@ def convert_floats2ints(df: pd.DataFrame) -> pd.DataFrame:
     """
     Converts float columns to integers where all non-null values are whole numbers.
 
-    :param: df: Input DataFrame containing columns to be processed
-    :return df: DataFrame with appropriate float columns converted to integers
+    Parameters:
+        - df: Input DataFrame containing columns to be processed
+
+    Returns:
+        - df: DataFrame with appropriate float columns converted to integers
     """
     df = df.copy()
 

@@ -49,19 +49,19 @@ class FileIO:
     If the user presses enter without providing a path, the current working directory is used by default.
 
     Parameters:
-    - path: The user's desired directory, including necessary folders and files.
+        - path: The user's desired directory, including necessary folders and files.
 
     Errors Raised:
-    - self._validate_root_path(): Raises FileNotFoundError if the root path does not exist.
-    - self._validate_input_files_path(): Raises FileNotFoundError if the input files path is missing.
-    - self._validate_fedex_invoice_path(): Raises FileNotFoundError if the invoice data file is not found.
-    - self._validate_sheets(): Raises FileNotFoundError if the invoice data does not contain the correct sheet
-    (applies to .xlsx files only).
-    - self._validate_qbo_path(): Raises FileNotFoundError if the QBO file is not found.
-    - self._validate_customer_path():
-    - Raises FileNotFoundError if the customer folder does not exist.
-    - Raises NotADirectoryError if the path is not a directory.
-    - Raises FileNotFoundError if the customer folder is empty.
+        - self._validate_root_path(): Raises FileNotFoundError if the root path does not exist.
+        - self._validate_input_files_path(): Raises FileNotFoundError if the input files path is missing.
+        - self._validate_fedex_invoice_path(): Raises FileNotFoundError if the invoice data file is not found.
+        - self._validate_sheets(): Raises FileNotFoundError if the invoice data does not contain the correct sheet
+        (applies to .xlsx files only).
+        - self._validate_qbo_path(): Raises FileNotFoundError if the QBO file is not found.
+        - self._validate_customer_path():
+        - Raises FileNotFoundError if the customer folder does not exist.
+        - Raises NotADirectoryError if the path is not a directory.
+        - Raises FileNotFoundError if the customer folder is empty.
     """
 
     def __init__(self, path):
@@ -97,7 +97,6 @@ class FileIO:
 
     def _validate_root_path(self):
 
-        # Raise error if original path does not exist
         if not os.path.exists(self.original_path):
             raise FileNotFoundError("Original path not found")
 
@@ -108,12 +107,11 @@ class FileIO:
         self.input_files_exists: bool
         self.input_files_folder: str | None
 
-        # Define input_files folder -> root/input_files/
+        # root/input_files/
         self.input_files_path: str = os.path.normpath(
             os.path.join(self.original_path, "input_files")
         )
 
-        # Check if file matches RegEx
         self.input_files_exists, self.input_files_folder = check_file_exists(
             self.all_files_in_root, r"input(?:_+files)?"
         )
@@ -125,7 +123,7 @@ class FileIO:
                 "Input Files folder not found. Expected a folder like 'input_files/' in root folder."
             )
 
-        # Define input_files path -> root/input_files/
+        # root/input_files/
         self.input_files_lst: list[str] = os.listdir(self.input_files_path)
 
     def _setup_fedex_invoice_path(self):
@@ -133,7 +131,6 @@ class FileIO:
         self.fedex_invoice_exists: bool
         self.fedex_invoice_file: str | None
 
-        # Check if file matches RegEx and output invoice file name
         self.fedex_invoice_exists, self.fedex_invoice_file = check_file_exists(
             self.input_files_lst,
             r"\b(fedex|invoice)(?:[_\-\s]+(fedex|invoice))?(?:_+data)?\b",
@@ -141,7 +138,6 @@ class FileIO:
 
     def _validate_fedex_invoice_path(self):
 
-        # Raise error if fedex invoice file does not exist
         if not self.fedex_invoice_exists:
             raise FileNotFoundError(
                 "Invoice Data not found.\
@@ -150,7 +146,8 @@ class FileIO:
             )
 
         if self.fedex_invoice_file is not None:
-            # Create invoice data path -> root/input_files/invoice_data
+
+            # root/input_files/invoice_data
             self.fedex_invoice_path: str = os.path.join(
                 self.input_files_path, self.fedex_invoice_file
             )
@@ -164,11 +161,9 @@ class FileIO:
                 self.invoice_sheet_exists: bool
                 self.correct_sheet: Optional[None | str]
 
-                # Get sheets object and name
                 self.inv_sheets: ExcelFile = ExcelFile(self.fedex_invoice_path)
                 self.inv_sheet_names: list = self.inv_sheets.sheet_names
 
-                # Check if sheets match RegEx and output correct sheet name
                 self.invoice_sheet_exists, self.correct_sheet = check_file_exists(
                     self.inv_sheet_names,
                     r"\b(fedex|invoice)(?:[_\-\s]+(fedex|invoice))?(?:_+data)?\b",
@@ -177,7 +172,7 @@ class FileIO:
     def _validate_sheets(self):
 
         if self.fedex_invoice_file is not None:
-            # Raise error if none of the correct Excel sheets exist
+
             if (
                 self.fedex_invoice_file.endswith(".xlsx")
                 and not self.invoice_sheet_exists
@@ -191,14 +186,12 @@ class FileIO:
         self.qbo_exists: bool
         self.qbo_file: str | None
 
-        # Check if file matches RegEx in root/input_files/qbo or quickbooks
         self.qbo_exists, self.qbo_file = check_file_exists(
             self.input_files_lst, r"(qbo|quickbooks)"
         )
 
     def _validate_qbo_path(self):
 
-        # Raise error if qbo file does not exist
         if not self.qbo_exists:
             raise FileNotFoundError(
                 "QBO not found. Expected a file like 'qbo' in 'input_files/' folder"
@@ -209,29 +202,25 @@ class FileIO:
         self.customer_folder_exists: bool
         self.customer_folder_name: str | None
 
-        # Create customer folder path -> root/input_files/customer/
+        # root/input_files/customer/
         self.customer_path: str = os.path.normpath(
             os.path.join(self.input_files_path, "customers")
         )
 
-        # Create list of customers
         if os.path.isdir(self.customer_path):
             self.customer_lst: list[str] = os.listdir(self.customer_path)
 
-        # Check if file matches RegEx and output customer folder name
         self.customer_folder_exists, self.customer_folder_name = check_file_exists(
             self.input_files_lst, r"customers?"
         )
 
     def _validate_customer_path(self):
 
-        # Raise error if customer folder does not exists or is not a directory
         if not self.customer_folder_exists:
             raise FileNotFoundError("Please create a customer folder.")
         if self.customer_folder_exists and not os.path.isdir(self.customer_path):
             raise NotADirectoryError("Customer path is not a directory")
 
-        # Raise error if customer folder is empty
         if not len(self.customer_lst) > 0:
             raise FileNotFoundError("Customer folder must not be empty.")
 
@@ -242,7 +231,7 @@ class FileIO:
 
         Reads the FedEx invoice, QBO, and customer data into their respective DataFrames.
 
-        :return:
+        Returns:
             - fedex_invoice: Pandas DataFrame of the original FedEx invoice.
             - qbo: Pandas DataFrame of the original QBO file.
             - customer_dct: Dictionary with customer names as keys and DataFrames as values.
@@ -311,8 +300,9 @@ class FileIO:
         Outputs resulting Excel file to output folder in original path.
         Creates a new output folder (/root/output_folder) if does not exist.
 
-        :param final_df: Pandas DataFrame of fully reconciled data
-        :param qbo_found: Pandas DataFrame of values found in QBO
+        Parameters:
+            - final_df: Pandas DataFrame of fully reconciled data
+            - qbo_found: Pandas DataFrame of values found in QBO
         """
         print("Writing Excel")
 

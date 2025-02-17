@@ -34,8 +34,9 @@ class FindCustomerPO:
         """
         Initializes the FindCustomerPO class with QBO and FedEx invoice DataFrames.
 
-        :param qbo: DataFrame containing QuickBooks data.
-        :param fedex_invoice: DataFrame containing FedEx invoice data.
+        Parameters:
+            - qbo: DataFrame containing QuickBooks data.
+            - fedex_invoice: DataFrame containing FedEx invoice data.
         """
         self.qbo: DataFrame = qbo
         self.fedex_invoice: DataFrame = fedex_invoice
@@ -54,11 +55,13 @@ class FindCustomerPO:
         """
         Compares FedEx invoice data with QuickBooks using specified key columns.
 
-        :param qbo_key_lst: List of column names in the QBO dataset to search for matches.
-        :param fedex_key: Column name in the FedEx dataset to match against QBO. Default is "Customer PO #".
-        :return: A tuple containing two DataFrames:
-                 - qbo_found: Records found in QBO.
-                 - qbo_not_found: Records not found in QBO.
+        Parameters:
+            - qbo_key_lst: List of column names in the QBO dataset to search for matches.
+            - fedex_key: Column name in the FedEx dataset to match against QBO. Default is "Customer PO #".
+        Returns:
+            - A tuple containing two DataFrames:
+                - qbo_found: Records found in QBO.
+                - qbo_not_found: Records not found in QBO.
         """
         qbo_found: DataFrame = DataFrame()
 
@@ -107,17 +110,18 @@ class FindPatternMatches:
         """
         Initializes the FindPatternMatches class.
 
-        :param name: Customer name.
-        :param extensiv_table: DataFrame containing Extensiv data.
-        :param fedex_invoice: DataFrame containing FedEx invoice data.
+        Parameters:
+            - name: Customer name.
+            - extensiv_table: DataFrame containing Extensiv data.
+            - fedex_invoice: DataFrame containing FedEx invoice data.
         """
         self.name: str = name
         self.extensiv_table: DataFrame = extensiv_table
         self.fedex_invoice: DataFrame = fedex_invoice
 
         # For output of stats during runtime
-        self.receiver_matches: list = list()
-        self.reference_matches: list = list()
+        self.receiver_matches: list = []
+        self.reference_matches: list = []
 
         if not (
             isinstance(self.extensiv_table, DataFrame)
@@ -133,8 +137,9 @@ class FindPatternMatches:
         """
         Stores matched reference and receiver information during comparisons.
 
-        :param reference_match: Matched reference value (optional).
-        :param receiver_match: Matched receiver value (optional).
+        Parameters:
+            - reference_match: Matched reference value (string) or None.
+            - receiver_match: Matched receiver value (dictionary) or None.
         """
 
         if receiver_match:
@@ -164,8 +169,11 @@ class FindPatternMatches:
         """
         Converts a string value into a regex pattern for reference matching.
 
-        :param value: Input string to convert.
-        :return: Compiled regex pattern.
+        Parameters:
+            - value: Input string to convert.
+        Returns:
+            - Compiled regex pattern.
+
         """
         with_letters: str = sub(r"[a-zA-Z]+", r"\\w+", str(value))
         with_numbers: str = sub(r"\d+(\.\d+)?", r"\\d+(\\.\\d+)?", with_letters)
@@ -178,8 +186,10 @@ class FindPatternMatches:
         """
         Identifies columns in the Extensiv table that contain values matching a given reference pattern.
 
-        :param reference_pattern: Regular expression pattern to search for in Extensiv table columns.
-        :return: A set of column names that contain at least one match to the reference pattern.
+        Parameters:
+            - reference_pattern: Regular expression pattern to search for in Extensiv table columns.
+        Returns:
+            - A set of column names that contain at least one match to the reference pattern.
 
         Notes:
             - The search is limited to the first 25 records in each column for performance reasons.
@@ -210,8 +220,10 @@ class FindPatternMatches:
         """
         Finds matching columns in the Extensiv table for each reference in a given FedEx invoice column.
 
-        :param reference_column_name: Column in the FedEx Invoice to compare against Extensiv values.
-        :return: A dictionary where keys are reference values, and values are sets of matching Extensiv columns.
+        Parameters:
+            - reference_column_name: Column in the FedEx Invoice to compare against Extensiv values.
+        Returns:
+            - A dictionary where keys are reference values, and values are sets of matching Extensiv columns.
         """
         match_dct: dict = dict()
 
@@ -230,8 +242,10 @@ class FindPatternMatches:
         """
         Compares reference values from the FedEx invoice against values in matched Extensiv table columns.
 
-        :param reference_column_lst: List of FedEx Invoice columns to compare against Extensiv data.
-        :return: A list of dictionaries containing matched reference details.
+        Parameters:
+            - reference_column_lst: List of FedEx Invoice columns to compare against Extensiv data.
+        Returns:
+            - A list of dictionaries containing matched reference details.
 
         Notes:
             - Performs both exact and fuzzy matching.
@@ -338,7 +352,8 @@ class FindPatternMatches:
         """
         Performs fuzzy matching to compare receiver details between the Extensiv and FedEx Invoice datasets.
 
-        :return: A list of dictionaries containing matched receiver details and customer name.
+        Returns:
+            - A list of dictionaries containing matched receiver details and customer name.
 
         Notes:
             - Uses token_set_ratio for fuzzy matching.
@@ -392,10 +407,12 @@ def make_final_df(
     """
     Updates the [Customer PO #] in fedex_invoice with the customer name if a match is found in Extensiv.
 
-    :param reference_matches: List of dictionaries with references found in Extensiv table.
-    :param receiver_matches: List of dictionaries with receiver information found in Extensiv table.
-    :param fedex_invoice: DataFrame with records where [Customer PO #] was not found in QuickBooks.
-    :return: Updated DataFrame with replaced [Customer PO #] values if a match is found.
+    Parameters:
+        - reference_matches: List of dictionaries with references found in Extensiv table.
+        - receiver_matches: List of dictionaries with receiver information found in Extensiv table.
+        - fedex_invoice: DataFrame with records where [Customer PO #] was not found in QuickBooks.
+    Returns:
+        - Updated DataFrame with replaced [Customer PO #] values if a match is found.
     """
     final_df: DataFrame = fedex_invoice.copy()
 
