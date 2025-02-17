@@ -34,7 +34,9 @@ from file_io import FileIO
 
 
 class TestIO(unittest.TestCase):
-    """Needs docstring"""
+    """
+    Test cases to test input functionality and appropriate error catching.
+    """
 
     def setUp(self):
 
