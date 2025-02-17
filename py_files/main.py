@@ -1,9 +1,9 @@
 """==========================================================================================
 
-    Title:       <Nautical_Reconciliation>
-    File:        <main.py>
-    Author:      <Dan Sagher>
-    Date:        <12/25/24>
+    Title:       Nautical_Reconciliation
+    File:        main.py
+    Author:      Dan Sagher
+    Date:        12/25/24
     Description:
         This tool reconciles invoice data from FedEx with QuickBooks Online (QBO) data and customer 
         information stored in Extensiv tables. It simplifies the comparison and matching process to 
@@ -25,9 +25,9 @@
             - tqdm
             - functools
         Internal:
-            - pattern_match (for pattern matching logic)
-            - processing (for data preprocessing)
-            - file_io (for input and output handling)
+            - pattern_match
+            - processing
+            - file_io
 
 #=========================================================================================="""
 
@@ -39,9 +39,9 @@ from pattern_match import FindCustomerPO, FindPatternMatches, make_final_df
 from processing import convert_floats2ints
 from file_io import FileIO
 
-def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFrame] ) -> DataFrame:  # fmt: skip
+def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFrame] ) -> DataFrame: 
     """
-    main() function calls the input, preprocessing, pattern matching, and output classes, methods, and functions.
+    Calls input, preprocessing, pattern matching, and output classes, methods, and functions.
 
     Parameters:
         - fedex_invoice: Pandas DataFrame of FedEx invoice
@@ -55,7 +55,6 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
 
     print("Pre-Processing")
 
-    # Pre-process
     convert_floats2ints(fedex_invoice)
     convert_floats2ints(qbo)
     for df in customer_dct.values():
@@ -63,7 +62,6 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
 
     print("Comparing FedEx Invoice to QBO")
 
-    # Compare FedEx invoice to QBO
     FEDEX_KEY: str = "Customer PO #"
     REFERENCE_LST: list = ["Reference", "Reference 2"]
     QBO_KEY_LST: list = ["Fully_Qualified_Name", "Display_Name"]
@@ -73,28 +71,22 @@ def main(fedex_invoice: DataFrame, qbo: DataFrame, customer_dct: dict[str,DataFr
 
     print("Searching through Extensiv tables for reference and receiver info matches")
 
-    # Compare FedEx invoice to Extensiv
     reference_matches = list()
     receiver_matches = list()
 
-    # Loop through Extensiv tables
+    # Loop through customer Extensiv tables
     for customer, dataframe in tqdm(customer_dct.items(), smoothing=0.5):
 
-        PartialFindPatternMatches = partial(
-            FindPatternMatches, fedex_invoice=qbo_not_found
-        )
+        PartialFindPatternMatches = partial(FindPatternMatches, fedex_invoice=qbo_not_found)
 
         customer_pattern_match = PartialFindPatternMatches(customer, dataframe)
 
-        reference_matches.extend(
-            customer_pattern_match.compare_references(REFERENCE_LST)
-        )
+        reference_matches.extend(customer_pattern_match.compare_references(REFERENCE_LST))
 
         receiver_matches.extend(customer_pattern_match.compare_receiver_info())
 
         print(customer_pattern_match)
 
-    # Replace Customer PO # with Customer Name if match is found
     final_df = make_final_df(reference_matches, receiver_matches, qbo_not_found)
 
     return final_df, qbo_found
@@ -107,4 +99,4 @@ if __name__ == "__main__":
     fedex_invoice, qbo, customer_dct = io.get_input()
     final_df, qbo_found = main(fedex_invoice, qbo, customer_dct)
     io.output(final_df, qbo_found)
-    print("All done")
+    print("Finished")

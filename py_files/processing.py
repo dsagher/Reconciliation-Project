@@ -1,7 +1,7 @@
 """==========================================================================================
-    File: processing.py
-    Author: Dan Sagher
-    Date: 12/25/24
+    File:       processing.py
+    Author:     Dan Sagher
+    Date:       12/25/24
     Description:
         Contains data preprocessing functions for converting floating point numbers to integers
         when appropriate. Used to standardize numeric data types across different input sources.
@@ -12,12 +12,6 @@
             - pandas
         Internal:
             - None
-
-    Usage:
-        from processing import convert_floats2ints
-        
-        # Convert appropriate float columns to integers
-        processed_df = convert_floats2ints(input_df)
 =========================================================================================="""
 
 import numpy as np

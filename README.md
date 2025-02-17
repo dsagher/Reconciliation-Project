@@ -7,22 +7,14 @@ The **Reconciliation Project** is a Python-based tool for reconciling invoice da
 ---
 
 ## Features
-
+- **Flexible Input:** Compatible with Excel and CSV files. 
 - **Input Data Validation:** Ensures required files and folders are present in the input directory.
 - **Automated Data Matching:**
-  - Matches invoice data against QBO records using `Customer PO #` and `Display_Name`.
+  - Matches invoice data against QBO records.
   - Compares reference and receiver information from invoice data against Extensiv customer data.
-- **Error Handling:** Provides detailed feedback on missing files, invalid formats, or unmatched data.
+- **Modular Keys:** Flexible keys allowing for scaling with more lookup values.
+- **Error Handling:** Provides detailed feedback on missing files or invalid formats.
 - **Custom Pattern Matching:** Uses regular expressions to create patterns for matching invoice references.
-- **Flexible Output:** Generates an Excel file summarizing reconciled data.
+- **User-Friendly Output:** Generates an Excel file summarizing reconciled data.
 
 ---
-
-## Planned Improvements
-
-- **Flexibility for File Type IO:** Add functionality to support additional input file types such as `.csv` for broader compatibility.
-- **Code Optimization:**
-  - Break down PatterMatch class into smaller subclasses for easier scaling.
-- **Performance Enhancements:**
-  - Multiprocessing for faster runtime.
-

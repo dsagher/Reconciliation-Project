@@ -1,8 +1,8 @@
 """==========================================================================================
     
-    File: io_tests.py
-    Author: Dan Sagher
-    Date: 12/25/24
+    File:       io_tests.py
+    Author:     Dan Sagher
+    Date:       12/25/24
     Description:
         Contains the unit tests for file_io.py.
 
@@ -137,8 +137,7 @@ class TestIO(unittest.TestCase):
         with self.assertRaises(FileNotFoundError) as error:
             FileIO(self.temp_dir_name)
 
-        self.assertEqual(
-            str(error.exception),
+        self.assertEqual(str(error.exception),
             "Input Files folder not found. Expected a folder like 'input_files/' in root folder.",
         )
 
@@ -151,8 +150,7 @@ class TestIO(unittest.TestCase):
         with self.assertRaises(FileNotFoundError) as error:
             FileIO(self.temp_dir_name)
 
-        self.assertEqual(
-            str(error.exception),
+        self.assertEqual(str(error.exception),
             "Invoice Data not found.\
                 Expected a file like 'invoice_data' or \
                 'fedex_invoice' in 'input_files/' folder.",
@@ -167,8 +165,7 @@ class TestIO(unittest.TestCase):
         with self.assertRaises(FileNotFoundError) as error:
             FileIO(self.temp_dir_name)
 
-        self.assertEqual(
-            str(error.exception),
+        self.assertEqual(str(error.exception),
             "Invoice Data not found.\
                 Expected a file like 'invoice_data' or \
                 'fedex_invoice' in 'input_files/' folder.",
@@ -183,8 +180,7 @@ class TestIO(unittest.TestCase):
         with self.assertRaises(FileNotFoundError) as error:
             FileIO(self.temp_dir_name)
 
-        self.assertEqual(
-            str(error.exception),
+        self.assertEqual(str(error.exception),
             "QBO not found. Expected a file like 'qbo' in 'input_files/' folder",
         )
 
@@ -197,8 +193,7 @@ class TestIO(unittest.TestCase):
         with self.assertRaises(FileNotFoundError) as error:
             FileIO(self.temp_dir_name)
 
-        self.assertEqual(
-            str(error.exception),
+        self.assertEqual(str(error.exception),
             "QBO not found. Expected a file like 'qbo' in 'input_files/' folder",
         )
 
@@ -208,8 +203,8 @@ class TestIO(unittest.TestCase):
 
         self.create_excel_file(self.fedex_invoice, worksheet_name="invoice_data")
         self.create_excel_file(self.qbo, worksheet_name="qbo")
-        # Test IO when customer file does not exist
 
+        # Test IO when customer file does not exist
         with self.assertRaises(FileNotFoundError) as error:
             FileIO(self.temp_dir_name)
 
@@ -304,8 +299,7 @@ class TestIO(unittest.TestCase):
         with self.assertRaises(FileNotFoundError) as error:
             FileIO(self.temp_dir_name)
 
-        self.assertEqual(
-            str(error.exception),
+        self.assertEqual(str(error.exception),
             "Invoice Data not found.\
                 Expected a file like 'invoice_data' or \
                 'fedex_invoice' in 'input_files/' folder.",
@@ -322,8 +316,7 @@ class TestIO(unittest.TestCase):
         with self.assertRaises(FileNotFoundError) as error:
             FileIO(self.temp_dir_name)
 
-        self.assertEqual(
-            str(error.exception),
+        self.assertEqual(str(error.exception),
             "QBO not found. Expected a file like 'qbo' in 'input_files/' folder",
         )
 
@@ -341,8 +334,7 @@ class TestIO(unittest.TestCase):
         with self.assertRaises(FileNotFoundError) as error:
             io.get_input()
 
-        self.assertEqual(
-            str(error.exception), "Invoice Data File must end in .csv or .xlsx"
+        self.assertEqual(str(error.exception), "Invoice Data File must end in .csv or .xlsx"
         )
 
     def test_qbo_suffix(self):

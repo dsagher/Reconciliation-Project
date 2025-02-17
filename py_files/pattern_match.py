@@ -1,8 +1,8 @@
 """==========================================================================================
     
-    File: pattern_match.py
-    Author: Dan Sagher
-    Date: 12/25/24
+    File:       pattern_match.py
+    Author:     Dan Sagher
+    Date:       12/25/24
     Description:  
         Defines the PatternMatch class and methods for matching references and receiver details  
         in Extensiv tables.  
@@ -41,17 +41,10 @@ class FindCustomerPO:
         self.qbo: DataFrame = qbo
         self.fedex_invoice: DataFrame = fedex_invoice
 
-        # Raise error if inputs to class are not DataFrames
-
-        if not (
-            isinstance(self.qbo, DataFrame)
-            and isinstance(self.fedex_invoice, DataFrame)
-        ):
+        if not (isinstance(self.qbo, DataFrame) and isinstance(self.fedex_invoice, DataFrame)):
             raise TypeError("Both tables must be DataFrames")
 
-    def compare_qbo(
-        self, qbo_key_lst: list, fedex_key: str = "Customer PO #"
-    ) -> tuple[DataFrame, DataFrame]:
+    def compare_qbo(self, qbo_key_lst: list, fedex_key: str = "Customer PO #") -> tuple[DataFrame, DataFrame]:
         """
         Compares FedEx invoice data with QuickBooks using specified key columns.
 
@@ -83,13 +76,12 @@ class FindCustomerPO:
         fedex_columns: list = list(self.fedex_invoice.columns)
         qbo_found = qbo_found[fedex_columns]
 
-        # Create sets of found and not found references
         self.found_references_unique: set = set(qbo_found["Customer PO #"].unique())
         self.all_references_unique: set = set(self.fedex_invoice["Customer PO #"])
-        self.unmatched_references: set = (self.all_references_unique - self.found_references_unique)  # fmt: skip
+        self.unmatched_references: set = (self.all_references_unique - self.found_references_unique)
 
         # Create new DataFrame with only unique unmatched_references
-        qbo_not_found: DataFrame = DataFrame(list(self.unmatched_references), columns=["Customer PO #"])  # fmt:skip
+        qbo_not_found: DataFrame = DataFrame(list(self.unmatched_references), columns=["Customer PO #"]) 
 
         # Merge with fedex invoice
         qbo_not_found = qbo_not_found.merge(
@@ -123,17 +115,10 @@ class FindPatternMatches:
         self.receiver_matches: list = []
         self.reference_matches: list = []
 
-        if not (
-            isinstance(self.extensiv_table, DataFrame)
-            and isinstance(self.fedex_invoice, DataFrame)
-        ):
+        if not (isinstance(self.extensiv_table, DataFrame) and isinstance(self.fedex_invoice, DataFrame)):
             raise TypeError("Both tables must be DataFrames")
 
-    def append_match(
-        self,
-        reference_match: str | None = None,
-        receiver_match: dict[str, Any] | None = None,
-    ):
+    def append_match( self, reference_match: str | None = None, receiver_match: dict[str, Any] | None = None,):
         """
         Stores matched reference and receiver information during comparisons.
 
@@ -148,12 +133,12 @@ class FindPatternMatches:
         if reference_match:
             self.reference_matches.append(reference_match)
 
-    # Printing of stats during runtime
     def __str__(self) -> str:
         """
         Returns a formatted string summary of pattern matching results.
         """
         return (
+            f"\n"
             f"\n"
             f"Customer: {self.name}\n"
             f"{'-' * 70 }\n"
@@ -173,7 +158,6 @@ class FindPatternMatches:
             - value: Input string to convert.
         Returns:
             - Compiled regex pattern.
-
         """
         with_letters: str = sub(r"[a-zA-Z]+", r"\\w+", str(value))
         with_numbers: str = sub(r"\d+(\.\d+)?", r"\\d+(\\.\\d+)?", with_letters)
@@ -182,7 +166,7 @@ class FindPatternMatches:
         final: Pattern = compile(with_spaces)
         return final
 
-    def __find_matching_columns(self, reference_pattern: Series,) -> Optional[set[str]]:  # fmt:skip
+    def __find_matching_columns(self, reference_pattern: Series,) -> Optional[set[str]]: 
         """
         Identifies columns in the Extensiv table that contain values matching a given reference pattern.
 
@@ -198,25 +182,19 @@ class FindPatternMatches:
         SAMPLE_SIZE: int = 25
         columns: set = set()
 
-        # Iterate through each column in Extensiv table
         for column in self.extensiv_table.columns:
 
-            # Iterate through the first 25 values of each column
             for value in self.extensiv_table[column][:SAMPLE_SIZE]:
 
-                # If match of the current reference RegEx pattern, add to set
                 if fullmatch(reference_pattern, str(value)):
 
-                    # Break after first match
                     columns.add(column.strip())
                     break
 
         if columns:
             return columns
 
-    def __find_extensiv_reference_columns(
-        self, reference_column_name: str
-    ) -> dict[str, set]:
+    def __find_extensiv_reference_columns(self, reference_column_name: str) -> dict[str, set]:
         """
         Finds matching columns in the Extensiv table for each reference in a given FedEx invoice column.
 
@@ -227,7 +205,6 @@ class FindPatternMatches:
         """
         match_dct: dict = dict()
 
-        # Iterate through Reference column in fedex_invoice
         for i, v in enumerate(self.fedex_invoice[reference_column_name]):
 
             pattern = self.fedex_invoice[self.reference_pattern_column][i]
@@ -238,7 +215,7 @@ class FindPatternMatches:
 
         return match_dct
 
-    def compare_references(self, reference_column_lst: list) -> list[dict[str, str]]:  # fmt:skip
+    def compare_references(self, reference_column_lst: list) -> list[dict[str, str]]: 
         """
         Compares reference values from the FedEx invoice against values in matched Extensiv table columns.
 
@@ -256,37 +233,33 @@ class FindPatternMatches:
         match_lst: list = list()
         unique_references: set = set()
 
-        # Iterate through each reference column in argument list
         for reference_column in reference_column_lst:
 
             self.reference_pattern_column: str = reference_column + "_Pattern"
-            self.fedex_invoice[self.reference_pattern_column] = self.fedex_invoice[
-                                    reference_column].apply(self.__reg_tokenizer)  # fmt:skip
+            self.fedex_invoice[self.reference_pattern_column] = self.fedex_invoice[reference_column].apply(self.__reg_tokenizer) 
 
-            reference_columns: dict = self.__find_extensiv_reference_columns(
-                reference_column
-            )
+            reference_columns: dict = self.__find_extensiv_reference_columns(reference_column)
 
             # Iterate through references
             for reference, columns in reference_columns.items():
 
                 # Iterate through each column in Extensiv table
-                for col in self.extensiv_table[list(columns)]:
+                for column in self.extensiv_table[list(columns)]:
 
                     # Iterate through each value in column
-                    for val in self.extensiv_table[col]:
+                    for value in self.extensiv_table[column]:
 
-                        val_str = str(val).lower().strip()
-                        ref_str = str(reference).lower().strip()
+                        value_str = str(value).lower().strip()
+                        reference_str = str(reference).lower().strip()
 
                         # Exact match check
-                        if val_str == ref_str:
+                        if value_str == reference_str:
 
                             if reference not in unique_references:
                                 match_lst.append(
                                     {
                                         "Reference": reference,
-                                        "Column": col,
+                                        "Column": column,
                                         "Customer": self.name,
                                     }
                                 )
@@ -294,37 +267,25 @@ class FindPatternMatches:
                                 self.append_match(reference_match=reference)
 
                         # Fuzzy match check
-                        elif (
-                            fuzz.partial_ratio(ref_str, str(self.name).lower().strip())
-                            > FUZZY_SCORE
-                            and reference not in unique_references
-                        ):
+                        elif (fuzz.partial_ratio(reference_str, str(self.name).lower().strip()) > FUZZY_SCORE
+                              and reference not in unique_references):
                             match_lst.append(
                                 {
                                     "Reference": reference,
-                                    "Column": col,
+                                    "Column": column,
                                     "Customer": self.name,
                                 }
                             )
                             unique_references.add(reference)
                             self.append_match(reference_match=reference)
 
-            # Drop [Pattern] column
-            self.fedex_invoice = self.fedex_invoice.drop(
-                columns=self.reference_pattern_column
-            )
+            self.fedex_invoice = self.fedex_invoice.drop(columns=self.reference_pattern_column)
 
         return match_lst
 
     def __create_extensiv_receiver_info(self):
         """Extracts unique receiver information from the Extensiv table for comparison."""
-        extensiv_receiver_info = self.extensiv_table.drop_duplicates(
-            [
-                "ShipTo.CompanyName",
-                "ShipTo.Name",
-                "ShipTo.Address1",
-            ]
-        )
+        extensiv_receiver_info = self.extensiv_table.drop_duplicates(["ShipTo.CompanyName","ShipTo.Name","ShipTo.Address1"])
         self.extensiv_receiver_lst: list = []
         for _, row in extensiv_receiver_info.iterrows():
             entry = {
@@ -336,10 +297,9 @@ class FindPatternMatches:
 
     def __create_fedex_invoice_receiver_info(self):
         """Extracts unique receiver information from the FedEx Invoice for comparison."""
-        fedex_invoice_info = self.fedex_invoice.drop_duplicates(
-            ["Receiver Address", "Receiver Company", "Receiver Name"]
-        )
+        fedex_invoice_info = self.fedex_invoice.drop_duplicates(["Receiver Address", "Receiver Company", "Receiver Name"])
         self.fedex_invoice_receiver_lst: list = []
+        
         for _, row in fedex_invoice_info.iterrows():
             entry = {
                 "Receiver Address": row["Receiver Address"],
@@ -380,11 +340,8 @@ class FindPatternMatches:
                 name_score: float = fuzz.token_set_ratio(fedex_name, extensiv_name)  # fmt:skip
                 company_score: float = fuzz.token_set_ratio(fedex_company, extensiv_company)  # fmt:skip
 
-                if (
-                    address_score > FUZZY_SCORE
-                    and name_score > FUZZY_SCORE
-                    and company_score > FUZZY_SCORE
-                ):
+                if (address_score > FUZZY_SCORE and name_score > FUZZY_SCORE and company_score > FUZZY_SCORE):
+
                     match_entry = {
                         "Address": fedex_receiver["Receiver Address"],
                         "Name": fedex_receiver["Receiver Name"],
@@ -399,11 +356,7 @@ class FindPatternMatches:
         return match_lst
 
 
-def make_final_df(
-    reference_matches: list[dict[str, str]],
-    receiver_matches: list[dict[str, str]],
-    fedex_invoice: DataFrame,
-) -> DataFrame:
+def make_final_df(reference_matches: list[dict[str, str]],receiver_matches: list[dict[str, str]],fedex_invoice: DataFrame,) -> DataFrame:
     """
     Updates the [Customer PO #] in fedex_invoice with the customer name if a match is found in Extensiv.
 
@@ -416,7 +369,6 @@ def make_final_df(
     """
     final_df: DataFrame = fedex_invoice.copy()
 
-    # Add reference and receiver information into master list
     final_matches_lst: list = []
     final_matches_lst.extend(reference_matches)
     final_matches_lst.extend(receiver_matches)
@@ -432,33 +384,19 @@ def make_final_df(
         # Iterate through each dictionary in master list
         for dct in final_matches_lst:
 
-            extensiv_reference = str(dct["Reference"]).lower().strip() \
-                                     if "Reference" in dct else None  # fmt:skip
-
-            extensiv_receiver_address = str(dct["Address"]).lower().strip() \
-                                     if "Address" in dct else None  # fmt:skip
-
-            extensiv_receiver_name = str(dct["Name"]).lower().strip() \
-                                     if " Name" in dct else None  # fmt:skip
-
-            extensiv_receiver_company = str(dct["Company"]).lower().strip() \
-                                     if "Company" in dct else None  # fmt:skip
+            extensiv_reference = str(dct["Reference"]).lower().strip() if "Reference" in dct else None 
+            extensiv_receiver_address = str(dct["Address"]).lower().strip() if "Address" in dct else None 
+            extensiv_receiver_name = str(dct["Name"]).lower().strip() if " Name" in dct else None 
+            extensiv_receiver_company = str(dct["Company"]).lower().strip() if "Company" in dct else None 
 
             # Replace [Customer PO #] with customer name if match is found in Extensiv
             if "Reference" in dct and extensiv_reference == fedex_reference:
-
                 final_df.loc[i, "Customer PO #"] = dct["Customer"]
-
-            elif ("Address" in dct and extensiv_receiver_address == fedex_receiver_address):  # fmt:skip
-
+            elif ("Address" in dct and extensiv_receiver_address == fedex_receiver_address): 
                 final_df.loc[i, "Customer PO #"] = dct["Customer"]
-
             elif "Name" in dct and extensiv_receiver_name == fedex_receiver_name:
-
                 final_df.loc[i, "Customer PO #"] = dct["Customer"]
-
-            elif ("Company" in dct and extensiv_receiver_company == fedex_receiver_company):  # fmt:skip
-
+            elif ("Company" in dct and extensiv_receiver_company == fedex_receiver_company):
                 final_df.loc[i, "Customer PO #"] = dct["Customer"]
 
     return final_df
