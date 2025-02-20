@@ -68,9 +68,7 @@ class FindCustomerPO:
                 how="inner",
             )
 
-            qbo_found = concat(
-                [qbo_found, merged_df], ignore_index=True
-            ).drop_duplicates(ignore_index=True)
+            qbo_found = concat([qbo_found, merged_df], ignore_index=True).drop_duplicates(ignore_index=True)
 
         # Only include columns from fedex_invoice in merged dataset
         fedex_columns: list = list(self.fedex_invoice.columns)
@@ -118,7 +116,7 @@ class FindPatternMatches:
         if not (isinstance(self.extensiv_table, DataFrame) and isinstance(self.fedex_invoice, DataFrame)):
             raise TypeError("Both tables must be DataFrames")
 
-    def append_match( self, reference_match: str | None = None, receiver_match: dict[str, Any] | None = None,):
+    def append_match( self, reference_match: str | None = None, receiver_match: dict[str, Any] | None = None):
         """
         Stores matched reference and receiver information during comparisons.
 
@@ -356,7 +354,7 @@ class FindPatternMatches:
         return match_lst
 
 
-def make_final_df(reference_matches: list[dict[str, str]],receiver_matches: list[dict[str, str]],fedex_invoice: DataFrame,) -> DataFrame:
+def make_final_df(reference_matches: list[dict[str, str]],receiver_matches: list[dict[str, str]],fedex_invoice: DataFrame) -> DataFrame:
     """
     Updates the [Customer PO #] in fedex_invoice with the customer name if a match is found in Extensiv.
 
