@@ -227,7 +227,7 @@ class FindPatternMatches:
             - Matches are stored in a list of dictionaries with Reference, Column, and Customer information.
         """
 
-        FUZZY_SCORE: int = 75
+        FUZZY_SCORE: float = 75.0
         match_lst: list = list()
         unique_references: set = set()
 
@@ -390,11 +390,11 @@ def make_final_df(reference_matches: list[dict[str, str]],receiver_matches: list
             # Replace [Customer PO #] with customer name if match is found in Extensiv
             if "Reference" in dct and extensiv_reference == fedex_reference:
                 final_df.loc[i, "Customer PO #"] = dct["Customer"]
-            elif ("Address" in dct and extensiv_receiver_address == fedex_receiver_address): 
+            elif "Address" in dct and extensiv_receiver_address == fedex_receiver_address: 
                 final_df.loc[i, "Customer PO #"] = dct["Customer"]
             elif "Name" in dct and extensiv_receiver_name == fedex_receiver_name:
                 final_df.loc[i, "Customer PO #"] = dct["Customer"]
-            elif ("Company" in dct and extensiv_receiver_company == fedex_receiver_company):
+            elif "Company" in dct and extensiv_receiver_company == fedex_receiver_company:
                 final_df.loc[i, "Customer PO #"] = dct["Customer"]
 
     return final_df
