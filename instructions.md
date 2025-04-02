@@ -5,15 +5,30 @@
      (https://github.com/dsagher/Reconciliation-Project)
 
 2. **Prepare the Directory Structure**
-   - Inside the root project folder:
-     - Create a folder named `input_files/`.
-     - Inside `input_files/`, create a subfolder named `customers/`.
+Input and output folders must be structured as follows:
+.
+└── Reconciliation Project/
+    ├── input_files/
+    │   ├── customers/
+    │   │   ├── amt
+    │   │   ├── gp_acoustics
+    │   │   └── whill
+    │   ├── invoice_data
+    │   └── qbo
+    ├── output_files/
+    │   └── output_excel_file (omitted)
+    ├── scripts/
+    │   ├── main.py
+    │   ├── file_io.py
+    │   ├── pattern_match.py
+    │   ├── processing.py
+    │   └── io_tests.py
+    ├── instructions.txt
+    ├── requirements.txt
+    ├── README.md
+    └── .gitignore
 
-3. **Add Files**
-   - Place individual `customer.xlsx` files into the `customers/` folder.
-   - Place `invoice_data.xlsx` and `qbo.xlsx` into the `input_files/` folder.
-
-4. **Install Requirements**
+3. **Install Requirements**
    Choose one of the following options to install the project dependencies:
 
    - **Option A: Use a Virtual Environment (Recommended)**
@@ -24,7 +39,7 @@
           source venv/bin/activate
           ```
         - Windows:
-          ```bash
+          ```Powershell
           python -m venv venv
           venv\Scripts\activate
           ```
@@ -38,7 +53,7 @@
        ```bash
        pip install -r path/to/folder/requirements.txt
        ```
-5. **Run the Program**:
+4. **Run the Program**:
    This script handles input files, processes data, and generates output in the `output_files/` folder.
    Creates 'output_files/' folder if doesn't exist.
 
@@ -48,5 +63,5 @@
         ```
     2. Execute the `main.py` script to start the program.
         ```bash
-        python py_files/main.py
+        python scripts/main.py
         ```

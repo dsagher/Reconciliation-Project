@@ -15,6 +15,30 @@ The **Reconciliation Project** is a Python-based tool for reconciling invoice da
 - **Modular Keys:** Flexible keys allowing for scaling with more lookup values.
 - **Error Handling:** Provides detailed feedback on missing files or invalid formats.
 - **Custom Pattern Matching:** Uses regular expressions to create patterns for matching invoice references.
+- **Fuzzy Matching:** Uses fuzzy matching to match similar values ex: 123 Main Street & 123 main st.
 - **User-Friendly Output:** Generates an Excel file summarizing reconciled data.
+
+## Directory Structure
+.
+└── Reconciliation Project/
+    ├── input_files/
+    │   ├── customers/
+    │   │   ├── amt
+    │   │   ├── gp_acoustics
+    │   │   └── whill
+    │   ├── invoice_data
+    │   └── qbo
+    ├── output_files/
+    │   └── output_excel_file (omitted)
+    ├── scripts/
+    │   ├── main.py
+    │   ├── file_io.py
+    │   ├── pattern_match.py
+    │   ├── processing.py
+    │   └── io_tests.py
+    ├── instructions.txt
+    ├── requirements.txt
+    ├── README.md
+    └── .gitignore
 
 ---
