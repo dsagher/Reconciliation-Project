@@ -19,6 +19,7 @@ The **Reconciliation Project** is a Python-based tool for reconciling invoice da
 - **User-Friendly Output:** Generates an Excel file summarizing reconciled data.
 
 ## Directory Structure
+```
 .
 └── Reconciliation Project/
     ├── input_files/
@@ -40,5 +41,5 @@ The **Reconciliation Project** is a Python-based tool for reconciling invoice da
     ├── requirements.txt
     ├── README.md
     └── .gitignore
-
+```
 ---
