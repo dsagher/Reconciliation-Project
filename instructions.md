@@ -6,6 +6,7 @@
 
 2. **Prepare the Directory Structure**
 Input and output folders must be structured as follows:
+```
 .
 └── Reconciliation Project/
     ├── input_files/
@@ -27,7 +28,7 @@ Input and output folders must be structured as follows:
     ├── requirements.txt
     ├── README.md
     └── .gitignore
-
+```
 3. **Install Requirements**
    Choose one of the following options to install the project dependencies:
 
