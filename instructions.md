@@ -11,13 +11,13 @@ Input and output folders must be structured as follows:
 └── Reconciliation Project/
     ├── input_files/
     │   ├── customers/
-    │   │   ├── amt
-    │   │   ├── gp_acoustics
-    │   │   └── whill
+    │   │   ├── customer1
+    │   │   ├── customer2
+    │   │   └── customer3
     │   ├── invoice_data
     │   └── qbo
     ├── output_files/
-    │   └── output_excel_file (omitted)
+    │   └── output_excel_file
     ├── scripts/
     │   ├── main.py
     │   ├── file_io.py
